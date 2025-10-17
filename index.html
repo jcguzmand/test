@@ -1,30 +1,174 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hola Mundo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Menú Principal de Tests – JAVA y .NET</title>
   <style>
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      background-color: #f0f0f0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
+    :root{
+      --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#94a3b8; --accent:#22d3ee;
+      --right:#16a34a; --wrong:#dc2626; --btn:#1f2937; --btn-hover:#374151;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";
+      background:radial-gradient(1200px 800px at 20% 0%,#0b1220,var(--bg));
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    header{
+      position:sticky;top:0;
+      background:rgba(15,23,42,.7);
+      backdrop-filter:blur(6px);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      padding:12px 16px;
+      z-index:10;
+    }
+    h1{margin:0;font-size:clamp(22px,3.5vw,34px)}
+    .sub{color:var(--muted)}
+    .container{max-width:900px;margin:0 auto;padding:20px}
+    main{flex:1}
+
+    .card{
+      background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      padding:20px;
+      margin-bottom:16px;
     }
 
-    h1 {
-      color: #333;
-      background: white;
-      padding: 20px 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    .menu-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      cursor:pointer;
+      font-size:18px;
+      color:var(--accent);
+      user-select:none;
     }
+
+    .menu-content{
+      margin-top:12px;
+      display:none;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .btn{
+      background:linear-gradient(180deg,#111827,#0b1220);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.1);
+      padding:10px 14px;
+      border-radius:12px;
+      cursor:pointer;
+      transition:transform .06s ease,filter .2s ease;
+      text-align:left;
+    }
+    .btn:hover{filter:brightness(1.1)}
+    .btn:active{transform:translateY(1px)}
+
+    footer{
+      padding:24px 16px;
+      color:var(--muted);
+      text-align:center;
+      font-size:14px;
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+
+    .arrow{
+      transition:transform .3s ease;
+    }
+    .open .arrow{
+      transform:rotate(90deg);
+    }
+
   </style>
 </head>
 <body>
-  <h1>¡Hola Mundo! 👋</h1>
+  <header>
+    <div class="container">
+      <h1>Menú de Tests – Bloques y Temarios</h1>
+      <p class="sub">Selecciona un bloque para ver sus temas disponibles.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Bloque 1 -->
+    <section class="card">
+      <div class="menu-title" onclick="toggleMenu(this)">
+        <span>📘 Bloque 1</span>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="menu-content">
+        <a href="bloque1-tema1.html" class="btn">Tema 1 – Introducción a la programación</a>
+        <a href="bloque1-tema2.html" class="btn">Tema 2 – Tipos de datos y estructuras básicas</a>
+      </div>
+    </section>
+
+    <!-- Bloque 2 -->
+    <section class="card">
+      <div class="menu-title" onclick="toggleMenu(this)">
+        <span>💻 Bloque 2</span>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="menu-content">
+        <a href="bloque2-tema1.html" class="btn">Tema 1 – Clases y objetos</a>
+        <a href="bloque2-tema2.html" class="btn">Tema 2 – Herencia y polimorfismo</a>
+      </div>
+    </section>
+
+    <!-- Bloque 3 -->
+    <section class="card">
+      <div class="menu-title" onclick="toggleMenu(this)">
+        <span>⚙️ Bloque 3</span>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="menu-content">
+        <a href="https://github.com/jcguzmand/test/bloque_3/bloque3_tema1_1.html" class="btn">tema1_1</a>
+        <a href="https://github.com/jcguzmand/test/bloque_3/bloque3_tema1_2.html" class="btn">tema1_2</a>
+        <a href="https://github.com/jcguzmand/test/bloque_3/bloque3_tema2_1.html" class="btn">tema2_1</a>ç
+        <a href="https://github.com/jcguzmand/test/bloque_3/bloque3_tema2_2.html" class="btn">tema2_2</a>
+        <a href="https://github.com/jcguzmand/test/bloque_3/bloque3_tema3_1.html" class="btn">tema3_1</a>
+        <a href="https://github.com/jcguzmand/test/bloque_3/bloque3_tema3_2.html" class="btn">tema3_2</a>
+        <a href="https://github.com/jcguzmand/test/bloque_3/bloque3_tema3_3.html" class="btn">tema3_3</a>
+        <a href="https://github.com/jcguzmand/test/bloque_3/bloque3_tema4_1.html" class="btn">tema4_1</a>
+        <a href="https://github.com/jcguzmand/test/bloque_3/bloque3_tema5.html" class="btn">tema5</a>
+
+      </div>
+    </section>
+
+    <!-- Bloque 4 -->
+    <section class="card">
+      <div class="menu-title" onclick="toggleMenu(this)">
+        <span>🧩 Bloque 4</span>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="menu-content">
+        <a href="bloque4-tema1.html" class="btn">Tema 1 – Conceptos de reutilización</a>
+        <a href="bloque4-tema2.html" class="btn">Tema 2 – Integración de componentes</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Hecho con ❤️ en HTML + JS. Selecciona un bloque para acceder a sus tests.
+  </footer>
+
+  <script>
+    function toggleMenu(element){
+      const card = element.parentElement;
+      const content = card.querySelector('.menu-content');
+      const isOpen = content.style.display === 'flex';
+      document.querySelectorAll('.menu-content').forEach(c => c.style.display = 'none');
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('open'));
+      if(!isOpen){
+        content.style.display = 'flex';
+        card.classList.add('open');
+      }
+    }
+  </script>
 </body>
 </html>
