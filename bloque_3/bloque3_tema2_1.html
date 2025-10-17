@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bloque 3 – Tema 2</title>
+  <style>
+    :root{
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --right: #16a34a;
+      --wrong: #dc2626;
+      --btn: #1f2937;
+      --btn-hover: #374151;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans";
+      background: radial-gradient(1200px 800px at 20% 0%, #0b1220, var(--bg)); color: var(--text); min-height: 100vh; }
+    header { position: sticky; top: 0; background: rgba(15,23,42,.7); backdrop-filter: blur(6px); border-bottom: 1px solid rgba(255,255,255,.08); padding: 12px 16px; z-index: 10; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 18px; }
+    h1 { margin: 0; font-size: clamp(22px, 3.5vw, 34px); } .sub { color: var(--muted); }
+    .board { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .pill { font-size: 13px; color: var(--muted); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); }
+    .btn { background: linear-gradient(180deg,#111827,#0b1220); color: var(--text); border: 1px solid rgba(255,255,255,.1); padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: transform .06s ease, filter .2s ease; }
+    .btn:hover { filter: brightness(1.1); } .btn:active { transform: translateY(1px); }
+    .grid { display: grid; gap: 16px; } .card { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 18px; }
+    .q { font-size: clamp(16px, 2.2vw, 20px); line-height: 1.35; margin-bottom: 12px; } .opts { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 640px) { .opts { grid-template-columns: 1fr 1fr; } }
+    .opt { background: var(--btn); border: 1px solid rgba(255,255,255,.08); color: var(--text); padding: 12px 14px; border-radius: 12px; text-align: left; cursor: pointer; transition: transform .06s ease, background .2s; }
+    .opt:hover { background: var(--btn-hover); } .opt[disabled] { opacity: .9; cursor: not-allowed; }
+    .opt.correct { outline: 2px solid var(--right); box-shadow: 0 0 0 3px rgba(22,163,74,.2) inset; }
+    .opt.wrong { outline: 2px solid var(--wrong); box-shadow: 0 0 0 3px rgba(220,38,38,.2) inset; }
+    .explain { color: var(--muted); font-size: 14px; margin-top: 8px; min-height: 20px; }
+    .summary { margin: 18px 0 6px; } .footbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .progress { height: 10px; width: 100%; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+    .bar { height: 100%; width: 0; background: linear-gradient(90deg, #06b6d4, #22d3ee); transition: width .35s ease; }
+    footer { padding: 24px 16px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+<header><div class="container">
+  <h3>Bloque 3 – Tema 2</h3>
+  <div class="board">
+    <div class="pill">Respondidas: <span id="answered">0</span> / <span id="total">0</span></div>
+    <div class="pill">Puntos: <span id="score">0</span></div>
+    <div class="pill">Correctas: <span id="corrects">0</span></div>
+    <button id="btnReset" class="btn">Reiniciar</button>
+  </div>
+  <div class="progress" style="margin-top:10px"><div id="bar" class="bar"></div></div>
+</div></header>
+<main class="container"><section id="quiz" class="grid"></section><div class="summary"><div class="pill">Resultado en vivo: <strong><span id="live">0</span>%</strong></div></div></main>
+<footer>Cuestionario con 50 preguntas basadas en Tema 2. Fuente: Tema 2.pdf.</footer>
+
+<script>
+
+const QUESTIONS = [
+  {
+    "q": "¿Qué es un algoritmo según el Tema 2?",
+    "opts": [
+      "Una base de datos",
+      "Un lenguaje de programación",
+      "Un intérprete",
+      "Un conjunto finito y ordenado de pasos para resolver un problema"
+    ],
+    "a": 3,
+    "exp": "Un algoritmo es un procedimiento o receta formada por pasos finitos y ordenados para resolver un problema."
+  },
+  {
+    "q": "¿Cuáles son, en general, las fases para realizar un programa?",
+    "opts": [
+      "Sólo codificación",
+      "Compilación y enlace únicamente",
+      "Análisis, diseño, codificación y pruebas",
+      "Instalación, ejecución y borrado"
+    ],
+    "a": 2,
+    "exp": "Las fases típicas son análisis, diseño, codificación y pruebas/depuración."
+  },
+  {
+    "q": "¿Qué caracteriza al lenguaje máquina?",
+    "opts": [
+      "Está basado en palabras en inglés",
+      "Tiene sintaxis similar a SQL",
+      "Es independiente del hardware",
+      "Es código binario directamente ejecutable por la CPU"
+    ],
+    "a": 3,
+    "exp": "El lenguaje máquina es código binario que la CPU puede ejecutar directamente."
+  },
+  {
+    "q": "¿Qué es el lenguaje ensamblador (bajo nivel)?",
+    "opts": [
+      "Una base de datos",
+      "Un tipo de lenguaje de alto nivel",
+      "Un sistema operativo",
+      "Un lenguaje con mnemónicos que se traduce a código máquina"
+    ],
+    "a": 3,
+    "exp": "El ensamblador usa mnemónicos que se traducen a instrucciones de máquina mediante un ensamblador."
+  },
+  {
+    "q": "¿Qué distingue a los lenguajes de alto nivel?",
+    "opts": [
+      "Son sólo para microcontroladores",
+      "Ofrecen abstracción respecto al hardware y facilitan programación",
+      "No necesitan traductores",
+      "Están escritos en binario"
+    ],
+    "a": 1,
+    "exp": "Los lenguajes de alto nivel ofrecen abstracción del hardware y requieren compilador/intérprete."
+  },
+  {
+    "q": "¿Cuál es la función del linker (enlazador)?",
+    "opts": [
+      "Optimizar algoritmos automáticamente",
+      "Analizar la sintaxis del programa",
+      "Unir módulos objeto y bibliotecas para generar ejecutable",
+      "Traducir código fuente a código objeto"
+    ],
+    "a": 2,
+    "exp": "El enlazador combina módulos objeto y bibliotecas para producir el programa ejecutable final."
+  },
+  {
+    "q": "¿Qué hace un compilador?",
+    "opts": [
+      "Gestiona la memoria en tiempo de ejecución",
+      "Ejecuta el programa línea a línea",
+      "Sólo formatea el código",
+      "Traduce todo el código fuente a código objeto o binario antes de la ejecución"
+    ],
+    "a": 3,
+    "exp": "El compilador traduce el programa completo a código objeto/binario previo a su ejecución."
+  },
+  {
+    "q": "¿Cómo actúa un intérprete?",
+    "opts": [
+      "Genera diagramas de flujo",
+      "Crea siempre ejecutables independientes",
+      "Traduce y ejecuta instrucción por instrucción durante la ejecución",
+      "Realiza el enlace de bibliotecas"
+    ],
+    "a": 2,
+    "exp": "El intérprete procesa y ejecuta instrucciones de forma inmediata, sin generar un ejecutable independiente."
+  },
+  {
+    "q": "¿Qué se entiende por 'abstracción' en programación?",
+    "opts": [
+      "La ejecución paralela",
+      "La conversión de variables en cadenas",
+      "El proceso de depuración",
+      "La ocultación de detalles irrelevantes para centrarse en lo esencial"
+    ],
+    "a": 3,
+    "exp": "La abstracción consiste en ocultar detalles de menor interés para centrarse en conceptos relevantes."
+  },
+  {
+    "q": "¿Cuál es una característica de un lenguaje multiparadigma (ej. Python)?",
+    "opts": [
+      "No admite llamadas a funciones",
+      "Solo permite programación funcional",
+      "No permite modularidad",
+      "Soporta varios estilos como imperativo, funcional y orientado a objetos"
+    ],
+    "a": 3,
+    "exp": "Un lenguaje multiparadigma admite varios estilos de programación (imperativo, OO, funcional...)."
+  },
+  {
+    "q": "¿Qué bloques deben especificarse al diseñar un programa?",
+    "opts": [
+      "Usuario, contraseña y permisos",
+      "Clases, tablas y vistas",
+      "Archivos, sockets y puertos",
+      "Entradas, algoritmos y salidas"
+    ],
+    "a": 3,
+    "exp": "Un programa se diseña definiendo las entradas, los algoritmos (procesamiento) y las salidas."
+  },
+  {
+    "q": "¿Qué hace una instrucción de asignación?",
+    "opts": [
+      "Imprime en pantalla",
+      "Lee datos por teclado",
+      "Abre un archivo",
+      "Asigna un valor a una variable"
+    ],
+    "a": 3,
+    "exp": "La asignación establece un valor para una variable (por ejemplo A ← 30)."
+  },
+  {
+    "q": "¿Qué realizan las instrucciones de lectura?",
+    "opts": [
+      "Compilan el código",
+      "Crean variables automáticas",
+      "Muestran resultados por pantalla",
+      "Leen datos desde un dispositivo de entrada (teclado, disco…)"
+    ],
+    "a": 3,
+    "exp": "Las instrucciones de lectura obtienen datos desde dispositivos de entrada como el teclado."
+  },
+  {
+    "q": "¿Qué realizan las instrucciones de escritura?",
+    "opts": [
+      "Inicializan la memoria",
+      "Borran archivos",
+      "Modifican variables internas del compilador",
+      "Muestran valores en un dispositivo de salida (pantalla, impresora)"
+    ],
+    "a": 3,
+    "exp": "Las instrucciones de escritura muestran valores en la salida (por ejemplo escribir(A,B,C))."
+  },
+  {
+    "q": "¿Qué es una bifurcación condicional?",
+    "opts": [
+      "Un tipo de dato",
+      "Un salto que siempre se realiza",
+      "Una función matemática",
+      "Un salto que depende de una condición evaluada"
+    ],
+    "a": 3,
+    "exp": "La bifurcación condicional se realiza solo si se cumple la condición evaluada."
+  },
+  {
+    "q": "¿Cuál de las siguientes es una estructura selectiva simple?",
+    "opts": [
+      "REPEAT-UNTIL",
+      "WHILE",
+      "FOR",
+      "SI-ENTONCES (IF-THEN)"
+    ],
+    "a": 3,
+    "exp": "La selectiva simple IF-THEN ejecuta una acción si se cumple una condición."
+  },
+  {
+    "q": "¿Qué estructura selectiva doble corresponde en pseudocódigo?",
+    "opts": [
+      "FOR",
+      "WHILE",
+      "SELECT CASE",
+      "SI-ENTONCES-SINO (IF-THEN-ELSE)"
+    ],
+    "a": 3,
+    "exp": "IF-THEN-ELSE permite ejecutar una u otra rama según la condición."
+  },
+  {
+    "q": "¿Qué estructura selectiva múltiple se utiliza para elegir entre varias alternativas?",
+    "opts": [
+      "ASIGNACIÓN",
+      "REPEAT",
+      "WHILE",
+      "CASE / SEGÚN-SI"
+    ],
+    "a": 3,
+    "exp": "La estructura CASE/SEGÚN permite seleccionar entre múltiples alternativas."
+  },
+  {
+    "q": "¿Qué es un bucle 'WHILE'?",
+    "opts": [
+      "Ejecuta exactamente N veces",
+      "Se ejecuta al menos una vez y luego comprueba la condición",
+      "Una instrucción de asignación",
+      "Ejecuta repetidamente mientras la condición sea verdadera"
+    ],
+    "a": 3,
+    "exp": "WHILE repite el bloque mientras la condición se mantenga verdadera."
+  },
+  {
+    "q": "¿Cuál es la característica de REPEAT…UNTIL?",
+    "opts": [
+      "Comprueba la condición al inicio; puede no ejecutarse nunca",
+      "Nunca termina",
+      "Es idéntico a FOR",
+      "Comprueba la condición al final; el cuerpo se ejecuta al menos una vez"
+    ],
+    "a": 3,
+    "exp": "REPEAT...UNTIL ejecuta el cuerpo primero y comprueba la condición al final."
+  },
+  {
+    "q": "¿Qué es un bucle FOR?",
+    "opts": [
+      "Una estructura selectiva",
+      "Un tipo de función",
+      "Un bucle con contador que normalmente itera un número determinado de veces",
+      "Una instrucción de salto incondicional"
+    ],
+    "a": 2,
+    "exp": "FOR itera normalmente un número fijo de veces usando un contador."
+  },
+  {
+    "q": "¿Qué es una instrucción de salto (JUMP)?",
+    "opts": [
+      "Interrumpe la secuencia lineal y transfiere el flujo a otra parte",
+      "Imprime por pantalla",
+      "Lee datos",
+      "Declara una variable"
+    ],
+    "a": 0,
+    "exp": "JUMP transfiere el flujo de control a otra instrucción, rompiendo la secuencia lineal."
+  },
+  {
+    "q": "¿Qué son los elementos básicos de un programa?",
+    "opts": [
+      "Sólo funciones y procedimientos",
+      "Únicamente bucles",
+      "Palabras reservadas, identificadores, constantes, variables, expresiones e instrucciones",
+      "Solo comentarios"
+    ],
+    "a": 2,
+    "exp": "Los elementos básicos incluyen palabras reservadas, identificadores, constantes, variables, expresiones e instrucciones."
+  },
+  {
+    "q": "¿Qué son los tipos de datos simples mencionados en el tema?",
+    "opts": [
+      "Funciones y procedimientos",
+      "Numéricos, lógicos (booleanos) y carácter",
+      "Tablas y vistas",
+      "Arrays y registros"
+    ],
+    "a": 1,
+    "exp": "Los tipos simples incluyen numéricos, booleanos y caracteres."
+  },
+  {
+    "q": "Según el tema, ¿qué es un array?",
+    "opts": [
+      "Una instrucción de control",
+      "Una función matemática",
+      "Una estructura heterogénea",
+      "Una estructura homogénea indexada"
+    ],
+    "a": 3,
+    "exp": "Un array es una colección indexada de elementos del mismo tipo (homogénea)."
+  },
+  {
+    "q": "¿Cómo se denomina un array unidimensional?",
+    "opts": [
+      "Matriz",
+      "Registro",
+      "Tabla",
+      "Vector"
+    ],
+    "a": 3,
+    "exp": "Un vector es un array unidimensional."
+  },
+  {
+    "q": "¿Qué es una matriz en este contexto?",
+    "opts": [
+      "Una función especial",
+      "Un tipo de variable entera",
+      "Un registro",
+      "Un array multidimensional (p. ej. bidimensional)"
+    ],
+    "a": 3,
+    "exp": "Una matriz es un array multidimensional (por ejemplo, una matriz 2D es un vector de vectores)."
+  },
+  {
+    "q": "¿Qué es un registro (record)?",
+    "opts": [
+      "Un tipo de bucle",
+      "Una instrucción de salida",
+      "Un array de enteros",
+      "Una estructura de datos heterogénea que agrupa campos de distintos tipos"
+    ],
+    "a": 3,
+    "exp": "Un registro agrupa varios campos que pueden ser de distinto tipo; es heterogéneo."
+  },
+  {
+    "q": "¿Cuál es la diferencia esencial entre array y registro?",
+    "opts": [
+      "Registro no puede almacenarse",
+      "Array permite tipos distintos",
+      "Array es más lento que registro",
+      "Array es homogéneo; registro es heterogéneo"
+    ],
+    "a": 3,
+    "exp": "La diferencia: arrays contienen elementos del mismo tipo; registros pueden contener tipos distintos."
+  },
+  {
+    "q": "¿Qué define a una constante?",
+    "opts": [
+      "Un comentario",
+      "Un tipo de bucle",
+      "Una variable temporal",
+      "Un valor que no cambia durante la ejecución del programa"
+    ],
+    "a": 3,
+    "exp": "Una constante posee un valor fijo que no se modifica durante el programa."
+  },
+  {
+    "q": "¿Qué es una variable?",
+    "opts": [
+      "Un comentario",
+      "Un identificador cuyo valor puede cambiar durante la ejecución",
+      "Un tipo de dato fijo",
+      "Una estructura inmutable"
+    ],
+    "a": 1,
+    "exp": "La variable es un nombre que se asocia a valores que pueden variar en tiempo de ejecución."
+  },
+  {
+    "q": "En expresiones aritméticas, ¿qué tipo de operadores se usan?",
+    "opts": [
+      "+ - * / y operadores aritméticos habituales",
+      "Operadores de cifrado",
+      "Operadores de red",
+      "Operadores SQL"
+    ],
+    "a": 0,
+    "exp": "Las expresiones aritméticas utilizan operadores como +, -, *, /, etc."
+  },
+  {
+    "q": "¿Qué tipo de expresiones son las lógicas (booleanas)?",
+    "opts": [
+      "Expresiones que convierten números a texto",
+      "Expresiones de enlace",
+      "Expresiones que imprimen por pantalla",
+      "Expresiones que evalúan verdadero o falso (p. ej. a > b)"
+    ],
+    "a": 3,
+    "exp": "Las expresiones lógicas devuelven verdadero/falso y se usan en condiciones."
+  },
+  {
+    "q": "¿Qué es la técnica 'divide y vencerás'?",
+    "opts": [
+      "Ejecutar el programa en paralelo sin diseño",
+      "Reemplazar todas las variables por constantes",
+      "Copiar y pegar el código entero",
+      "Dividir un problema en subproblemas más pequeños y resolverlos"
+    ],
+    "a": 3,
+    "exp": "Divide y vencerás consiste en descomponer el problema en partes más sencillas para resolverlo."
+  },
+  {
+    "q": "¿Qué son parámetros formales en una función?",
+    "opts": [
+      "Las variables globales",
+      "Los valores actuales pasados en la llamada",
+      "Los nombres que figuran en la declaración de la función",
+      "Las constantes del sistema"
+    ],
+    "a": 2,
+    "exp": "Los parámetros formales son los identificadores declarados en la firma de la función."
+  },
+  {
+    "q": "¿Qué son parámetros actuales (actuales)?",
+    "opts": [
+      "Los tipos de datos",
+      "Los comentarios",
+      "Los nombres en la declaración",
+      "Los valores que se pasan en la llamada a la función"
+    ],
+    "a": 3,
+    "exp": "Los parámetros actuales son los valores reales que se suministran al invocar la función."
+  },
+  {
+    "q": "¿Cuál es la diferencia principal entre una función y un procedimiento?",
+    "opts": [
+      "Una función no acepta parámetros",
+      "No hay diferencia",
+      "Un procedimiento siempre devuelve valor",
+      "Una función devuelve un valor; un procedimiento no necesariamente"
+    ],
+    "a": 3,
+    "exp": "La función típicamente devuelve un valor; un procedimiento (procedure) suele no devolver valor."
+  },
+  {
+    "q": "¿Qué indica la declaración de una función TO_CHAR() según el tema?",
+    "opts": [
+      "Borra variables",
+      "Inicializa memoria",
+      "Convierte valores a representación de texto",
+      "Crea una nueva tabla"
+    ],
+    "a": 2,
+    "exp": "TO_CHAR convierte valores (p. ej. numéricos o fechas) a su representación en texto."
+  },
+  {
+    "q": "¿Qué se entiende por invocación de una función?",
+    "opts": [
+      "Compilar la función",
+      "Llamar a la función desde otro punto del programa suministrando parámetros",
+      "Borrar la función",
+      "Declarar la función"
+    ],
+    "a": 1,
+    "exp": "Invocar una función es ejecutarla en tiempo de ejecución mediante una llamada con parámetros."
+  },
+  {
+    "q": "¿Qué tipos de instrucciones se mencionan como básicas en el tema?",
+    "opts": [
+      "JOIN, UNION, INTERSECT",
+      "SEND y RECEIVE",
+      "CREATE, DROP, ALTER",
+      "Inicio/fin, asignación, lectura, escritura y bifurcación"
+    ],
+    "a": 3,
+    "exp": "Las instrucciones básicas incluyen inicio/fin, asignación, lectura, escritura y bifurcación."
+  },
+  {
+    "q": "¿Qué ocurre si un programa tiene un error de sintaxis?",
+    "opts": [
+      "Se enlaza automáticamente",
+      "Se ejecuta normalmente",
+      "El compilador lo rechaza y no puede generar ejecutable",
+      "Se convierte en un comentario"
+    ],
+    "a": 2,
+    "exp": "Los errores de sintaxis impiden que el compilador genere código ejecutable."
+  },
+  {
+    "q": "Según el tema, ¿qué operaciones son típicas sobre vectores (arrays)?",
+    "opts": [
+      "Sólo suma y resta",
+      "Compilación y enlace",
+      "Creación de índices",
+      "Asignación, lectura/escritura, recorrido, ordenación y búsqueda"
+    ],
+    "a": 3,
+    "exp": "Entrar en vectores incluye operaciones como asignación, lectura, recorrido, ordenación y búsqueda."
+  },
+  {
+    "q": "¿Qué es la 'escritura de algoritmos y programas'?",
+    "opts": [
+      "Formatear impresoras",
+      "Instalar software",
+      "Crear sólo la documentación",
+      "El proceso de expresar soluciones mediante pseudocódigo o código ejecutable"
+    ],
+    "a": 3,
+    "exp": "Consiste en diseñar y codificar algoritmos para que sean ejecutables como programas."
+  },
+  {
+    "q": "¿Qué consecuencias tiene empezar índices de arrays en 0 en algunos lenguajes?",
+    "opts": [
+      "Hace que no haya matrices",
+      "La primera posición es 1 siempre",
+      "La primera posición es 0 y la última n-1",
+      "Impide la asignación"
+    ],
+    "a": 2,
+    "exp": "Si el índice empieza en 0, las posiciones van de 0 a n-1 en lugar de 1 a n."
+  },
+  {
+    "q": "¿Cuál de estas afirmaciones es correcta sobre funciones y procedimientos?",
+    "opts": [
+      "Los procedimientos son tipos de datos",
+      "Las funciones no aceptan parámetros",
+      "Los procedimientos siempre devuelven valor",
+      "Las funciones se usan en expresiones y devuelven valor; los procedimientos no se usan directamente en expresiones"
+    ],
+    "a": 3,
+    "exp": "Las funciones pueden aparecer en expresiones; los procedimientos se ejecutan por invocación y no devuelven valor en esa forma."
+  },
+  {
+    "q": "¿Qué hace una estructura de control secuencial?",
+    "opts": [
+      "Repite hasta condición",
+      "Salta a otra función",
+      "Declara variables",
+      "Ejecuta instrucciones en orden sin bifurcaciones"
+    ],
+    "a": 3,
+    "exp": "La secuencial ejecuta instrucciones una tras otra en el orden establecido sin desviaciones."
+  },
+  {
+    "q": "¿Cuál es la ventaja de modularizar un programa (módulos/funciones)?",
+    "opts": [
+      "Impide la ejecución",
+      "Ocultar errores",
+      "Aumentar el tamaño del ejecutable sin beneficios",
+      "Mejorar legibilidad, reutilización y mantenimiento"
+    ],
+    "a": 3,
+    "exp": "La modularidad facilita comprender, mantener y reutilizar el código separando responsabilidades."
+  },
+  {
+    "q": "¿Qué es una estructura de control anidada?",
+    "opts": [
+      "Un traductor",
+      "Una variable especial",
+      "Un tipo de array",
+      "Una estructura de control dentro de otra (p. ej. IF dentro de FOR)"
+    ],
+    "a": 3,
+    "exp": "Anidar estructuras significa colocar una dentro de otra para controlar flujos más complejos."
+  },
+  {
+    "q": "¿Qué caracteres reconocen la mayoría de los lenguajes según el tema?",
+    "opts": [
+      "Sólo signos de puntuación",
+      "Sólo números",
+      "Caracteres alfabéticos, numéricos y caracteres especiales",
+      "Sólo letras"
+    ],
+    "a": 2,
+    "exp": "La mayoría de lenguajes reconocen caracteres alfabéticos (A–Z), numéricos (0–9) y especiales (+,-,*,/,...)."
+  },
+  {
+    "q": "¿Qué atributo identifica a una variable en un programa?",
+    "opts": [
+      "Su dirección IP",
+      "Su tipo de dato solo",
+      "Su nombre o identificador",
+      "Su valor fijo"
+    ],
+    "a": 2,
+    "exp": "Una variable se identifica por su nombre o identificador; además tiene tipo y valor."
+  }
+];
+
+
+
+
+
+const quiz = document.getElementById('quiz');
+const totalEl = document.getElementById('total');
+const answeredEl = document.getElementById('answered');
+const scoreEl = document.getElementById('score');
+const correctsEl = document.getElementById('corrects');
+const liveEl = document.getElementById('live');
+const bar = document.getElementById('bar');
+
+let score = 0;
+let answered = 0;
+
+function updateHud() {
+  const total = QUESTIONS.length;
+  totalEl.textContent = total;
+  answeredEl.textContent = answered;
+  scoreEl.textContent = score;
+  correctsEl.textContent = score;
+  const pct = total ? Math.round((score/total)*100) : 0;
+  liveEl.textContent = pct;
+  bar.style.width = Math.min(100, (answered/total)*100) + '%';
+}
+
+function makeQuestionCard(qobj, index) {
+  const wrapper = document.createElement('article');
+  wrapper.className = 'card';
+
+  const q = document.createElement('div');
+  q.className = 'q';
+  q.innerHTML = (index+1) + '. ' + qobj.q;
+  wrapper.appendChild(q);
+
+  const opts = document.createElement('div');
+  opts.className = 'opts';
+
+  qobj.opts.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = text;
+    btn.addEventListener('click', () => handleAnswer(btn, i, qobj));
+    opts.appendChild(btn);
+  });
+
+  const fb = document.createElement('div');
+  fb.className = 'explain';
+
+  wrapper.appendChild(opts);
+  wrapper.appendChild(fb);
+
+  return wrapper;
+}
+
+function handleAnswer(button, selectedIdx, qobj) {
+  if (button.parentElement.dataset.locked === '1') return;
+
+  const buttons = Array.from(button.parentElement.querySelectorAll('.opt'));
+  buttons.forEach(b => b.disabled = true);
+
+  const correct = qobj.a;
+  if (selectedIdx === correct) {
+    button.classList.add('correct');
+    score++;
+    setFeedback(button, "✔️ ¡Correcto! " + (qobj.exp || ""));
+  } else {
+    button.classList.add('wrong');
+    buttons[correct].classList.add('correct');
+    setFeedback(button, "❌ No es correcto. Respuesta correcta: <strong>" + buttons[correct].textContent + "</strong>. " + (qobj.exp || ""));
+  }
+
+  answered++;
+  button.parentElement.dataset.locked = '1';
+  updateHud();
+}
+
+function setFeedback(button, html) {
+  const fb = button.parentElement.parentElement.querySelector('.explain');
+  fb.innerHTML = html;
+}
+
+function resetAll() {
+  score = 0;
+  answered = 0;
+  quiz.innerHTML = '';
+  QUESTIONS.forEach((q, i) => quiz.appendChild(makeQuestionCard(q, i)));
+  updateHud();
+}
+
+document.getElementById('btnReset').addEventListener('click', resetAll);
+resetAll();
+</script>
+</body>
+</html>

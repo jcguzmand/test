@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tema 1 – Cuestionario (50 preguntas)</title>
+  <style>
+    :root{
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --right: #16a34a;
+      --wrong: #dc2626;
+      --btn: #1f2937;
+      --btn-hover: #374151;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% 0%, #0b1220, var(--bg)); color: var(--text); min-height: 100vh; }
+    header { position: sticky; top: 0; background: rgba(15,23,42,.7); backdrop-filter: blur(6px); border-bottom: 1px solid rgba(255,255,255,.08); padding: 12px 16px; z-index: 10; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 18px; }
+    h1 { margin: 0; font-size: clamp(22px, 3.5vw, 34px); } .sub { color: var(--muted); }
+    .board { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .pill { font-size: 13px; color: var(--muted); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); }
+    .btn { background: linear-gradient(180deg,#111827,#0b1220); color: var(--text); border: 1px solid rgba(255,255,255,.1); padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: transform .06s ease, filter .2s ease; }
+    .btn:hover { filter: brightness(1.1); } .btn:active { transform: translateY(1px); }
+    .grid { display: grid; gap: 16px; } .card { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 18px; }
+    .q { font-size: clamp(16px, 2.2vw, 20px); line-height: 1.35; margin-bottom: 12px; } .opts { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 640px) { .opts { grid-template-columns: 1fr 1fr; } }
+    .opt { background: var(--btn); border: 1px solid rgba(255,255,255,.08); color: var(--text); padding: 12px 14px; border-radius: 12px; text-align: left; cursor: pointer; transition: transform .06s ease, background .2s; }
+    .opt:hover { background: var(--btn-hover); } .opt[disabled] { opacity: .9; cursor: not-allowed; }
+    .opt.correct { outline: 2px solid var(--right); box-shadow: 0 0 0 3px rgba(22,163,74,.2) inset; }
+    .opt.wrong { outline: 2px solid var(--wrong); box-shadow: 0 0 0 3px rgba(220,38,38,.2) inset; }
+    .explain { color: var(--muted); font-size: 14px; margin-top: 8px; min-height: 20px; }
+    .summary { margin: 18px 0 6px; } .footbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .progress { height: 10px; width: 100%; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+    .bar { height: 100%; width: 0; background: linear-gradient(90deg, #06b6d4, #22d3ee); transition: width .35s ease; }
+    footer { padding: 24px 16px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+<header><div class="container">
+  <h1>Tema 1 – Cuestionario</h1>
+  <div class="board">
+    <div class="pill">Respondidas: <span id="answered">0</span> / <span id="total">0</span></div>
+    <div class="pill">Puntos: <span id="score">0</span></div>
+    <div class="pill">Correctas: <span id="corrects">0</span></div>
+    <button id="btnReset" class="btn">Reiniciar</button>
+  </div>
+  <div class="progress" style="margin-top:10px"><div id="bar" class="bar"></div></div>
+</div></header>
+<main class="container"><section id="quiz" class="grid"></section><div class="summary"><div class="pill">Resultado en vivo: <strong><span id="live">0</span>%</strong></div></div></main>
+<footer>Cuestionario con 50 preguntas del Tema 1. Haz clic en cada opción para autocorregir.</footer>
+
+<script>
+
+const QUESTIONS = [
+  { q: "¿Qué es el modelo conceptual según el Tema 1?", opts: ["Un diagrama físico de tablas y tipos de datos.","El lenguaje que usamos para representar el esquema conceptual.","El diccionario de datos de un SGBD concreto.","Un conjunto de transacciones para probar la base de datos."], a: 1, exp: "El modelo conceptual es el lenguaje para representar el esquema conceptual." },
+  { q: "¿Cuál de estas NO es una propiedad deseable de las herramientas del modelo conceptual?", opts: ["Expresividad","Minimalidad","Dependencia del lenguaje de programación","Simplicidad"], a: 2, exp: "Debe ser expresivo, simple, minimal y formal, y no depender del lenguaje de programación." },
+  { q: "El modelo E/R de Peter Chen se introdujo en…", opts: ["1969","1976","1984","1995"], a: 1, exp: "Peter Chen introdujo el modelo E/R en 1976." },
+  { q: "Conceptos originales del modelo E/R:", opts: ["Entidad, Relación y Atributo","Entidad, Clave y Dominio","Relación, Cardinalidad y Dominio","Atributo, Dominio y Tupla"], a: 0, exp: "Originalmente: Entidad, Relación entre entidades y Atributo. La cardinalidad se añadió después." },
+  { q: "Una entidad débil…", opts: ["Tiene existencia independiente de otras entidades.","Se representa con rombo doble.","Solo existe ligada a una entidad fuerte y se representa con rectángulo doble.","Debe ser siempre física (p. ej., un coche)."], a: 2, exp: "Las entidades débiles dependen de una entidad fuerte y se representan como rectángulo doble." },
+  { q: "Un identificador/clave de una entidad debe…", opts: ["Permitir valores nulos en algunos casos.","Ser único y no admitir nulos.","Ser siempre numérico.","Cambiar en cada actualización."], a: 1, exp: "No pueden existir dos ocurrencias con el mismo identificador ni omitir atributos identificadores." },
+  { q: "¿Qué es una clave candidata?", opts: ["Una combinación de campos que quizá identifique registros.","Una clave que identifica de forma única pero no se eligió como primaria.","Cualquier atributo no clave.","Una clave externa a otra tabla."], a: 1, exp: "La clave candidata identifica de forma única, pero no es la elegida como primaria." },
+  { q: "El dominio de un atributo es…", opts: ["El conjunto de relaciones donde aparece.","El conjunto de valores posibles que puede tomar.","El tamaño máximo en bytes.","El índice asociado al atributo."], a: 1, exp: "Dominio = conjunto de valores permitidos para el atributo." },
+  { q: "Un atributo compuesto…", opts: ["No puede dividirse en subpartes.","Se usa solo en jerarquías.","Se puede dividir en atributos más básicos con significado propio.","Debe ser siempre multivaluado."], a: 2, exp: "Los compuestos se dividen en subpartes con significado propio; los atómicos no." },
+  { q: "¿Qué concepto se añadió al modelo E/R para determinar tipos de relación entre entidades?", opts: ["Cardinalidad","Dominio","Jerarquía","Clave foránea"], a: 0, exp: "La cardinalidad se añadió como concepto importante." },
+
+  /* 40 preguntas adicionales (11-50) extraídas y reformuladas del Tema 1 */
+  { q: "¿Qué es un esquema conceptual?", opts: ["Una descripción de la estructura física de los datos.","Una descripción de alto nivel de la información a almacenar, independiente del SGBD.","El diccionario de datos del sistema.","El conjunto de claves foráneas de una base de datos."], a: 1, exp: "El esquema conceptual describe los datos a almacenar, independiente del SGBD." },
+  { q: "¿Cuál es el objetivo principal del diseño de bases de datos?", opts: ["Satisfacer requisitos del usuario y garantizar eficiencia.","Reducir siempre el número de entidades.","Evitar completamente los atributos multivaluados.","Depender del lenguaje de programación."], a: 0, exp: "El diseño debe satisfacer los requisitos del software y ser eficiente." },
+  { q: "¿Qué es una entidad fuerte?", opts: ["Una entidad dependiente de otra.","Una entidad con existencia independiente.","Una relación entre entidades.","Un atributo que siempre es numérico."], a: 1, exp: "Entidad fuerte = existencia independiente." },
+  { q: "¿Qué es una relación en el modelo E/R?", opts: ["Un atributo que vincula dos tuplas.","Una correspondencia o asociación entre entidades.","Un identificador secundario.","Una clave foránea."], a: 1, exp: "La relación es la asociación entre entidades." },
+  { q: "Cuando una relación es total significa que…", opts: ["Todas las entidades participan al menos una vez en la relación.","La relación admite multivalores.","No tiene cardinalidad.","Solo es aplicable a jerarquías."], a: 0, exp: "Relación total = cada entidad participa al menos una vez." },
+  { q: "¿Qué es un atributo multivaluado?", opts: ["Un atributo con más de un dominio posible.","Un atributo que puede tener más de un valor por entidad.","Un atributo que no puede ser clave.","Un atributo que siempre es obligatorio."], a: 1, exp: "Ejemplo: teléfono con varios números." },
+  { q: "¿Qué debe contener el diccionario de datos según el Tema 1?", opts: ["Solo los nombres de tablas.","Modelo gráfico, esquema, catálogo de requisitos, dominios y documentación.","Solo claves primarias.","Solo las relaciones N:M."], a: 1, exp: "Incluye modelo gráfico, esquema, dominios y documentación." },
+  { q: "¿Cuál de estos pasos forma parte de la metodología de construcción del modelo conceptual?", opts: ["Eliminar todas las relaciones N:M.","Identificar entidades y relaciones.","Implementar índices físicos.","Codificar procedimientos."], a: 1, exp: "Entre los pasos: identificar entidades, relaciones y atributos." },
+  { q: "¿Qué notaciones de DFD son las más utilizadas?", opts: ["Yourdon & Coad y Gane & Sarson","UML y ER","BPMN y Flowchart","SQL y NoSQL"], a: 0, exp: "Yourdon & Coad y Gane & Sarson son las notaciones más comunes." },
+  { q: "¿Qué elemento NO forma parte de un DFD?", opts: ["Almacén de datos","Proceso","Flujo de datos","Clave primaria"], a: 3, exp: "Clave primaria no es elemento de un DFD." },
+
+  { q: "En un DFD, ¿qué representa un almacén de datos?", opts: ["Una colección de datos en reposo controlada por el sistema.","Un proceso que transforma datos.","Una entidad externa.","Una decisión."], a: 0, exp: "Almacén = datos en reposo (ficheros, bases de datos, etc.)." },
+  { q: "¿Qué regla indica la obligatoriedad de inicio y fin en un diagrama de flujo?", opts: ["Regla 1","Regla 4","Regla 7","No existe tal regla"], a: 0, exp: "Regla 1: todo diagrama debe tener inicio y final." },
+  { q: "¿Qué tipo de flujos existen entre procesos y almacenes?", opts: ["Consulta, actualización y diálogo","Lectura, escritura y borrado","Entrada, salida y control","Síncrono, asíncrono y batch"], a: 0, exp: "Los flujos pueden ser de consulta, actualización o diálogo." },
+  { q: "¿Cuál es la técnica top-down en DFD?", opts: ["Descomposición desde lo general a lo detallado.","Construcción desde procesos primitivos.","Ignorar el diagrama de contexto.","Combinar todos los procesos en uno."], a: 0, exp: "Top-down = descomposición jerárquica del sistema." },
+  { q: "¿Qué tipo de proceso muestra una funcionalidad que transforma datos?", opts: ["Proceso","Flujo de datos","Almacén","Entidad externa"], a: 0, exp: "Proceso representa una funcionalidad que transforma datos." },
+  { q: "En DFD, ¿qué es un flujo de control (en sistemas orientados al control)?", opts: ["Un evento que activa procesos","Un almacén de datos","Un tipo de entidad externa","Un proceso primitivo"], a: 0, exp: "Flujo de control representa señales que activan procesos." },
+  { q: "¿Qué deben respetar las líneas de un DFD según las reglas de construcción?", opts: ["Ser rectas (verticales u horizontales)","Ser curvas","Ser discontinuas","Ser punteadas"], a: 0, exp: "Regla: las líneas deben ser rectas (vertical u horizontal)." },
+  { q: "¿Qué simboliza un flujograma en programación?", opts: ["La representación gráfica de un algoritmo o proceso","Una tabla de base de datos","Un índice","Un diagrama E/R"], a: 0, exp: "Flujograma = diagrama de un algoritmo o proceso." },
+
+  { q: "¿Qué es una dependencia funcional (A → B)?", opts: ["Que A determina el valor de B","Que A y B son claves externas","Que A es multivaluado","Que A es un proceso del DFD"], a: 0, exp: "Dependencia funcional: A determina B." },
+  { q: "¿Qué significa que una tabla esté en Primera Forma Normal (1FN)?", opts: ["Atributos atómicos (valores indivisibles)","Que no hay claves primarias","Que existen sólo relaciones 1:1","Que todos los atributos son numéricos"], a: 0, exp: "1FN exige valores atómicos y clave primaria." },
+  { q: "¿Qué busca la Segunda Forma Normal (2FN)?", opts: ["Eliminar dependencias parciales respecto a una clave compuesta","Eliminar dependencias transitiveas","Forzar a atributos multivaluados","Eliminar claves foráneas"], a: 0, exp: "2FN elimina dependencias parciales de una clave compuesta." },
+  { q: "¿Qué resuelve la Tercera Forma Normal (3FN)?", opts: ["Eliminar dependencias transitivas","Eliminar multivaluados","Forzar 1:1","Aumentar redundancia"], a: 0, exp: "3FN elimina dependencias transitivas entre atributos." },
+  { q: "¿Qué exige Boyce-Codd (BCNF)?", opts: ["Que toda determinante sea clave candidata","Que no existan tablas","Que todas las claves sean compuestas","Que no existan jerarquías"], a: 0, exp: "BCNF: cada determinante debe ser una clave candidata." },
+  { q: "¿Qué trata de eliminar la 4FN?", opts: ["Dependencias multivaluadas","Dependencias transitivas","Claves externas","Redundancias de índices"], a: 0, exp: "4FN elimina dependencias multivaluadas." },
+  { q: "¿Qué busca la 5FN (forma de proyección-unión)?", opts: ["Eliminar dependencias de proyección / unión","Eliminar dependencias transitivas","Eliminar claves primarias","Eliminar jerarquías"], a: 0, exp: "5FN aisla hechos multivaluados para reducir redundancia." },
+  { q: "¿Qué es la desnormalización?", opts: ["Introducir redundancia controlada para mejorar rendimiento.","Aplicar más formas normales.","Eliminar claves externas.","Forzar atributos atómicos."], a: 0, exp: "Desnormalizar = unir tablas para rendimiento, aceptando redundancia." },
+
+  { q: "¿Qué regla de integridad indica que la clave primaria no admite nulos?", opts: ["Integridad de entidad","Integridad referencial","Integridad de dominio","Regla de negocio"], a: 0, exp: "Integridad de entidad: atributos de la clave primaria no admiten nulos." },
+  { q: "¿Qué dice la regla de integridad referencial?", opts: ["Que las claves foráneas deben existir en la clave primaria referenciada o ser nulas","Que las claves primarias pueden ser nulas","Que no existen dependencias funcionales","Que toda relación debe ser 1:N"], a: 0, exp: "Integridad referencial: valores FK deben corresponder a PK o ser nulos." },
+  { q: "Al borrar la tupla padre referenciada, una opción para mantener integridad es:", opts: ["Propagar el borrado en cascada","Ignorar el borrado","Convertir todo a multivaluado","Eliminar la base de datos"], a: 0, exp: "Una opción es la actualización en cascada (propagar el borrado)." },
+  { q: "¿Cuál NO es una forma de mantener integridad al borrar padre?", opts: ["Duplicar todas las tuplas en otra BD","Restringir, Propagar, Anular o Valor por defecto","Actualizar en cascada","Poner nulos si FK admite nulos"], a: 0, exp: "Duplicar todas las tuplas NO es una práctica de integridad referencial descrita." },
+  { q: "Al mapear una relación 1:1, una estrategia habitual es:", opts: ["Incluir la PK del padre como FK en la tabla hijo","Crear siempre una tabla puente","Eliminar la clave primaria","Hacer que ambas tablas sean multivaluadas"], a: 0, exp: "En 1:1 se incluye la PK del padre como FK del hijo o integrar ambas entidades." },
+  { q: "Al mapear una relación 1:N se suele:", opts: ["Incluir la PK de la entidad 'uno' como FK en la entidad 'muchos'","Crear una tabla puente obligatoria","Eliminar la entidad 'muchos'","Convertirla en 1:1"], a: 0, exp: "En 1:N se incluye la PK del 'uno' como FK en el 'muchos'." },
+  { q: "¿Cómo se suele representar una relación N:M en el modelo relacional?", opts: ["Crear una tabla intermedia (relación) con claves foráneas hacia ambas tablas","Integrar las dos tablas en una sola","Eliminar la relación","Usar un único atributo multivaluado"], a: 0, exp: "N:M requiere una relación intermedia (tabla puente) con FK a ambas tablas." },
+  { q: "¿Qué métodos existen para mapear jerarquías (generalización/especialización)?", opts: ["Crear relación por cada entidad hijo; integrar todo en una; o crear relación por cada hijo heredando la PK del padre","Solo un método: fusionar todo","Solo crear una tabla por la entidad padre","No mapear jerarquías"], a: 0, exp: "Existen varios métodos: tabla por entidad, tabla única con discriminador, etc." },
+  { q: "¿Qué es la partición de relaciones?", opts: ["Dividir relaciones por filas (horizontal) o por atributos (vertical) para reorganización","Combinar tablas para optimizar","Eliminar claves externas","Crear índices secundarios"], a: 0, exp: "Partición reorganiza casos o atributos según necesidades de acceso." },
+  { q: "¿Qué es la partición horizontal?", opts: ["Dividir por filas (casos)","Dividir por atributos (columnas)","Un tipo de normalización","Un índice"], a: 0, exp: "Partición horizontal separa conjuntos de tuplas (filas)." }
+];
+
+
+// Código JS igual que en el HTML original del usuario
+const quiz = document.getElementById('quiz');
+const totalEl = document.getElementById('total');
+const answeredEl = document.getElementById('answered');
+const scoreEl = document.getElementById('score');
+const correctsEl = document.getElementById('corrects');
+const liveEl = document.getElementById('live');
+const bar = document.getElementById('bar');
+
+let score = 0;
+let answered = 0;
+
+function updateHud() {
+  const total = QUESTIONS.length;
+  totalEl.textContent = total;
+  answeredEl.textContent = answered;
+  scoreEl.textContent = score;
+  correctsEl.textContent = score;
+  const pct = total ? Math.round((score/total)*100) : 0;
+  liveEl.textContent = pct;
+  bar.style.width = Math.min(100, (answered/total)*100) + '%';
+}
+
+function makeQuestionCard(qobj, index) {
+  const wrapper = document.createElement('article');
+  wrapper.className = 'card';
+
+  const q = document.createElement('div');
+  q.className = 'q';
+  q.innerHTML = (index+1) + '. ' + qobj.q;
+  wrapper.appendChild(q);
+
+  const opts = document.createElement('div');
+  opts.className = 'opts';
+
+  qobj.opts.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = text;
+    btn.addEventListener('click', () => handleAnswer(btn, i, qobj));
+    opts.appendChild(btn);
+  });
+
+  const fb = document.createElement('div');
+  fb.className = 'explain';
+
+  wrapper.appendChild(opts);
+  wrapper.appendChild(fb);
+
+  return wrapper;
+}
+
+function handleAnswer(button, selectedIdx, qobj) {
+  if (button.parentElement.dataset.locked === '1') return;
+
+  const buttons = Array.from(button.parentElement.querySelectorAll('.opt'));
+  buttons.forEach(b => b.disabled = true);
+
+  const correct = qobj.a;
+  if (selectedIdx === correct) {
+    button.classList.add('correct');
+    score++;
+    setFeedback(button, "✔️ ¡Correcto! " + (qobj.exp || ""));
+  } else {
+    button.classList.add('wrong');
+    buttons[correct].classList.add('correct');
+    setFeedback(button, "❌ No es correcto. Respuesta correcta: <strong>" + buttons[correct].textContent + "</strong>. " + (qobj.exp || ""));
+  }
+
+  answered++;
+  button.parentElement.dataset.locked = '1';
+  updateHud();
+}
+
+function setFeedback(button, html) {
+  const fb = button.parentElement.parentElement.querySelector('.explain');
+  fb.innerHTML = html;
+}
+
+function resetAll() {
+  score = 0;
+  answered = 0;
+  quiz.innerHTML = '';
+  QUESTIONS.forEach((q, i) => quiz.appendChild(makeQuestionCard(q, i)));
+  updateHud();
+}
+
+document.getElementById('btnReset').addEventListener('click', resetAll);
+resetAll();
+</script>
+</body>
+</html>

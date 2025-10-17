@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bloque 3 – Tema 3 (SQL)</title>
+  <style>
+    :root{
+      --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#94a3b8; --accent:#22d3ee;
+      --right:#16a34a; --wrong:#dc2626; --btn:#1f2937; --btn-hover:#374151;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";background:radial-gradient(1200px 800px at 20% 0%,#0b1220,var(--bg));color:var(--text);min-height:100vh}
+    header{position:sticky;top:0;background:rgba(15,23,42,.7);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,.08);padding:12px 16px;z-index:10}
+    .container{max-width:1000px;margin:0 auto;padding:18px}
+    h1{margin:0;font-size:clamp(22px,3.5vw,34px)}
+    .sub{color:var(--muted)}
+    .board{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+    .pill{font-size:13px;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12)}
+    .btn{background:linear-gradient(180deg,#111827,#0b1220);color:var(--text);border:1px solid rgba(255,255,255,.1);padding:10px 14px;border-radius:12px;cursor:pointer;transition:transform .06s ease,filter .2s ease}
+    .btn:hover{filter:brightness(1.1)} .btn:active{transform:translateY(1px)}
+    .grid{display:grid;gap:16px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:18px}
+    .q{font-size:clamp(16px,2.2vw,20px);line-height:1.35;margin-bottom:12px}
+    .opts{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:640px){.opts{grid-template-columns:1fr 1fr}}
+    .opt{background:var(--btn);border:1px solid rgba(255,255,255,.08);color:var(--text);padding:12px 14px;border-radius:12px;text-align:left;cursor:pointer;transition:transform .06s ease,background .2s}
+    .opt:hover{background:var(--btn-hover)}
+    .opt[disabled]{opacity:.9;cursor:not-allowed}
+    .opt.correct{outline:2px solid var(--right);box-shadow:0 0 0 3px rgba(22,163,74,.2) inset}
+    .opt.wrong{outline:2px solid var(--wrong);box-shadow:0 0 0 3px rgba(220,38,38,.2) inset}
+    .explain{color:var(--muted);font-size:14px;margin-top:8px;min-height:20px}
+    .summary{margin:18px 0 6px}
+    .footbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .progress{height:10px;width:100%;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,#06b6d4,#22d3ee);transition:width .35s ease}
+    footer{padding:24px 16px;color:var(--muted);text-align:center}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Bloque 3 – Tema 3 (SQL)</h1>
+      <div class="board">
+        <div class="pill">Respondidas: <span id="answered">0</span> / <span id="total">0</span></div>
+        <div class="pill">Puntos: <span id="score">0</span></div>
+        <div class="pill">Correctas: <span id="corrects">0</span></div>
+        <button id="btnReset" class="btn">Reiniciar</button>
+      </div>
+      <div class="progress" style="margin-top:10px"><div id="bar" class="bar"></div></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="quiz" class="grid"></section>
+    <div class="summary">
+      <div class="pill">Resultado en vivo: <strong><span id="live">0</span>%</strong></div>
+    </div>
+  </main>
+
+  <footer>
+    Hecho con ❤️ en HTML + JS. Haz clic en cada opción para autocorregir. Usa “Reiniciar” para volver a empezar.
+  </footer>
+
+<script>
+
+const QUESTIONS = [
+  {
+    q: "¿Qué significan las siglas POO según el documento?",
+    opts: [
+      "Programación Orientada a Objetos",
+      "Programación Operativa Obvia",
+      "Procesamiento Orientado a Operaciones",
+      "Programación Ordenada de Objetos"
+    ],
+    a: 0,
+    exp: "POO es el acrónimo de Programación Orientada a Objetos, que en inglés se conoce como OOP (Object Oriented Programming)."
+  },
+  {
+    q: "¿Qué es un 'atributo' en la Programación Orientada a Objetos?",
+    opts: [
+      "Una petición que se envía a un objeto.",
+      "Una característica o propiedad de los objetos.",
+      "Un tipo de dato abstracto.",
+      "Una acción que realiza el objeto."
+    ],
+    a: 1,
+    exp: "El documento define los atributos como las 'características o propiedades de los objetos', como la estatura de una persona o el color de un coche."
+  },
+  {
+    q: "Según el documento, ¿qué es un 'comportamiento' en la POO?",
+    opts: [
+      "El estado interno de un objeto.",
+      "Las acciones que realizan los objetos en respuesta a un estímulo.",
+      "La estructura interna de un programa.",
+      "La identidad única de un objeto."
+    ],
+    a: 1,
+    exp: "El comportamiento se refiere a las acciones que los objetos del mundo real realizan en respuesta a un determinado estímulo, como 'caminar' para una persona o 'acelerar' para un coche."
+  },
+  {
+    q: "En el enfoque de la POO, ¿cuál es la pregunta fundamental que se debe hacer?",
+    opts: [
+      "¿Qué lenguajes de programación son compatibles?",
+      "¿Qué hace este programa?",
+      "¿Qué objetos del mundo real podemos modelar?",
+      "¿Cómo se resuelve este problema?"
+    ],
+    a: 2,
+    exp: "A diferencia del enfoque procedimental, la programación orientada a objetos se enfoca en preguntarse '¿Qué objetos del mundo real podemos modelar?'."
+  },
+  {
+    q: "En la POO, ¿cuál es la principal función de una 'clase'?",
+    opts: [
+      "Representar una variable global.",
+      "Crear un programa estructurado.",
+      "Definir el orden de un programa.",
+      "Servir como una plantilla o modelo para la creación de objetos."
+    ],
+    a: 3,
+    exp: "Una clase es una plantilla con un modelo predefinido para la creación de objetos de datos de determinado tipo."
+  },
+  {
+    q: "¿Qué tipo de características de un sistema Orientado a Objetos son obligatorias?",
+    opts: [
+      "Abiertas.",
+      "Declarativas.",
+      "Opcionales.",
+      "Mandatorias."
+    ],
+    a: 3,
+    exp: "El documento divide las características del diseño de un sistema orientado a objetos en tres grupos: 'Mandatorias', 'Opcionales' y 'Abiertas'."
+  },
+  {
+    q: "Según el documento, ¿qué describe el paradigma declarativo?",
+    opts: [
+      "El orden de evaluación prefijado.",
+      "Qué calcular sin indicar el 'cómo'.",
+      "Los procedimientos de un programa.",
+      "Cómo se debe compilar el programa."
+    ],
+    a: 1,
+    exp: "El paradigma declarativo describe 'qué calcular sin indicar cómo', a diferencia del paradigma imperativo, que se enfoca en el 'cómo'."
+  },
+  {
+    q: "¿Qué es una 'instancia' en un lenguaje de programación orientado a objetos?",
+    opts: [
+      "Un objeto de una clase.",
+      "Una clase de un objeto.",
+      "Una variable inmutable.",
+      "Una copia de un programa."
+    ],
+    a: 0,
+    exp: "El documento lo define de la siguiente manera: 'En los lenguajes de programación orientada a objetos un objeto es una instancia de una clase'."
+  },
+  {
+    q: "¿Qué son los 'métodos' en la programación orientada a objetos?",
+    opts: [
+      "Las propiedades de una clase.",
+      "Variables de la clase.",
+      "Subrutinas que manipulan datos del objeto.",
+      "El estado de un objeto."
+    ],
+    a: 2,
+    exp: "Los métodos son 'subrutinas de manipulación de dichos datos', que implementan la funcionalidad asociada al objeto."
+  },
+  {
+    q: "En la POO, ¿cuál es la principal función de una 'clase'?",
+    opts: [
+      "Representar una variable global.",
+      "Crear un programa estructurado.",
+      "Servir como una plantilla o modelo para la creación de objetos.",
+      "Definir el orden de un programa."
+    ],
+    a: 2,
+    exp: "Una clase es una plantilla con un modelo predefinido para la creación de objetos de datos de determinado tipo."
+  },
+  {
+    q: "¿Qué elemento de UML permite crear nuevos tipos de bloques de construcción?",
+    opts: [
+      "Valores etiquetados.",
+      "Estereotipos.",
+      "Restricciones.",
+      "Adornos."
+    ],
+    a: 1,
+    exp: "UML proporciona mecanismos de extensión, y los estereotipos permiten crear nuevos tipos de bloques de construcción que derivan de los existentes."
+  },
+  {
+    q: "¿Qué es un 'objeto' en el contexto de la POO?",
+    opts: [
+      "Una dependencia entre clases.",
+      "Algo que se visualiza, se utiliza y juega un rol.",
+      "Un diagrama UML.",
+      "El esqueleto de un algoritmo."
+    ],
+    a: 1,
+    exp: "El documento define un objeto como 'algo que se visualiza, se utiliza y que juega un papel o un rol'."
+  },
+  {
+    q: "¿Qué son los 'datos' en un objeto?",
+    opts: [
+      "Propiedades.",
+      "Variables.",
+      "Funciones.",
+      "Atributos."
+    ],
+    a: 3,
+    exp: "Un objeto almacena valores, que se denominan atributos, variables o propiedades."
+  },
+  {
+    q: "¿Qué son las 'funciones' en un objeto?",
+    opts: [
+      "Atributos.",
+      "Métodos.",
+      "Variables.",
+      "Propiedades."
+    ],
+    a: 1,
+    exp: "Las acciones que pueden realizar los objetos se denominan servicios, funciones, métodos, procedimientos u operaciones."
+  },
+  {
+    q: "¿Qué es un 'componente de software'?",
+    opts: [
+      "Un lenguaje de programación.",
+      "Un sistema operativo.",
+      "Una técnica de abstracción.",
+      "Un elemento de un sistema que ofrece un servicio predefinido."
+    ],
+    a: 3,
+    exp: "Un componente de software es un elemento de un sistema que ofrece un servicio predefinido y es capaz de comunicarse con otros componentes."
+  },
+  {
+    q: "¿Qué es la 'reusabilidad'?",
+    opts: [
+      "El proceso de depuración de un programa.",
+      "El conjunto de operaciones de un objeto.",
+      "La facilidad de un objeto para ser destruido.",
+      "La capacidad de un componente para ser reutilizado en muchos programas diferentes."
+    ],
+    a: 3,
+    exp: "La reusabilidad (reusability) es la capacidad de un componente de software para ser diseñado e implementado de forma que pueda ser reutilizado en muchos programas diferentes."
+  },
+  {
+    q: "Según el documento, ¿qué es un 'mensaje'?",
+    opts: [
+      "La petición que se envía a un objeto para que realice una acción.",
+      "Un lenguaje de programación.",
+      "El resultado de una operación.",
+      "Un tipo de dato abstracto."
+    ],
+    a: 0,
+    exp: "Un mensaje es la petición que enviamos a un objeto para que se comporte de una determinada manera, es decir, que realice una acción."
+  },
+  {
+    q: "¿Cuáles son las tres partes de un mensaje?",
+    opts: [
+      "Identidad del objeto, operación solicitada e información adicional.",
+      "Nombre, tipo y valor.",
+      "Remitente, destinatario y contenido.",
+      "Clase, método y variable."
+    ],
+    a: 0,
+    exp: "Cada mensaje consta de tres partes: 'Identidad del objeto al que va dirigido el mensaje', 'Operación solicitada (método)' e 'Información adicional (argumentos)'."
+  },
+  {
+    q: "¿Qué es una 'caja negra' en programación?",
+    opts: [
+      "Una base de datos.",
+      "Un elemento con entradas y salidas, sin tener en cuenta su funcionamiento interno.",
+      "Un programa que gestiona la memoria.",
+      "Un tipo de dato abstracto."
+    ],
+    a: 1,
+    exp: "Una caja negra es un elemento que se estudia desde el punto de vista de las entradas que recibe y las salidas que produce, sin considerar su funcionamiento interno."
+  },
+  {
+    q: "¿Qué es el 'polimorfismo'?",
+    opts: [
+      "Una técnica de reutilización de código.",
+      "La capacidad de que una misma operación se realice de forma diferente según el objeto.",
+      "Un tipo de dato que permite almacenar varios valores.",
+      "Una propiedad que permite tener múltiples copias de una misma clase."
+    ],
+    a: 1,
+    exp: "El polimorfismo es la capacidad de que una misma operación se realice de forma diferente dependiendo del objeto al que se aplique."
+  },
+  {
+    q: "¿Qué es la 'sobrecarga' en la POO?",
+    opts: [
+      "Un error de compilación.",
+      "Una técnica de abstracción.",
+      "Tener varias clases con el mismo nombre.",
+      "La posibilidad de tener dos o más funciones con el mismo nombre pero diferente funcionalidad."
+    ],
+    a: 3,
+    exp: "La sobrecarga es la posibilidad de tener dos o más funciones con el mismo nombre, pero funcionalidad diferente. Se basa en el concepto de polimorfismo."
+  },
+  {
+    q: "¿Cuál de las siguientes no es una de las principales variantes del paradigma declarativo?",
+    opts: [
+      "Programación lógica.",
+      "Programación funcional.",
+      "Programación estructurada.",
+      "Lenguajes de dominio específico (DSLs)."
+    ],
+    a: 2,
+    exp: "El documento menciona el paradigma lógico, el funcional, los lenguajes de dominio específico (DSLs) y los lenguajes híbridos, pero no la programación estructurada."
+  },
+  {
+    q: "¿Cómo se llama la técnica que destruye automáticamente los objetos sin ninguna referencia a ellos?",
+    opts: [
+      "Encapsulamiento.",
+      "Recolección de basura (garbage collection).",
+      "Desasignación de memoria.",
+      "Manejo de excepciones."
+    ],
+    a: 1,
+    exp: "La recolección de basura es la técnica por la cual el entorno de objetos destruye automáticamente, y libera la memoria, los objetos que se han quedado sin ninguna referencia."
+  },
+  {
+    q: "¿Cuál es el propósito del 'encapsulamiento'?",
+    opts: [
+      "Ocultar los datos de un objeto para protegerlos.",
+      "Reutilizar código existente.",
+      "Modificar el comportamiento de un objeto.",
+      "Definir relaciones entre clases."
+    ],
+    a: 0,
+    exp: "El encapsulamiento se basa en el principio de ocultación de información, donde el estado de un objeto se protege y sólo se puede acceder a él a través de métodos definidos por la clase."
+  },
+  {
+    q: "¿Qué es la 'herencia' en la POO?",
+    opts: [
+      "La capacidad de un objeto de tener múltiples formas.",
+      "Un conjunto de instrucciones SQL.",
+      "La reutilización de código a través de la creación de una nueva clase que deriva de una existente.",
+      "La forma en que los objetos interactúan."
+    ],
+    a: 2,
+    exp: "La herencia permite la reutilización del código. Se puede coger una clase existente y crear una nueva clase que derive de esta, heredando todas sus propiedades."
+  },
+  {
+    q: "¿Qué es un 'diagrama de clases' en UML?",
+    opts: [
+      "Un diagrama que muestra los casos de uso.",
+      "Un diagrama que muestra las clases, atributos, operaciones y sus relaciones.",
+      "Un diagrama que muestra el flujo de control de un sistema.",
+      "Un diagrama que representa el hardware del sistema."
+    ],
+    a: 1,
+    exp: "Los diagramas de clases muestran las clases dentro de un sistema, sus atributos, operaciones y la relación entre cada clase."
+  },
+  {
+    q: "¿Qué es el 'modelado de sistemas'?",
+    opts: [
+      "Las etapas necesarias para resolver un problema mediante la identificación y agrupación de objetos.",
+      "La fase final de la creación de un programa.",
+      "La depuración de errores.",
+      "La compilación del código fuente."
+    ],
+    a: 0,
+    exp: "Las etapas para modelar un sistema son: 'Identificación de los objetos del problema', 'Agrupamiento los objetos en clases', 'Identificación de los atributos y operaciones' e 'Identificación de las relaciones entre clases'."
+  },
+  {
+    q: "Según el documento, ¿qué es la 'identidad' de un objeto?",
+    opts: [
+      "El conjunto de operaciones que se pueden realizar sobre él.",
+      "La propiedad que permite diferenciar objetos de forma no ambigua.",
+      "El nombre que se le da a una variable.",
+      "El conjunto de valores de sus atributos."
+    ],
+    a: 1,
+    exp: "La identidad 'permite diferenciar los objetos de modo no ambiguo. Es independiente de su estado y permite distinguir dos objetos idénticos en cuanto a los valores de sus atributos'."
+  },
+  {
+    q: "¿Qué es un 'diagrama de despliegue' en UML?",
+    opts: [
+      "Un diagrama que muestra la estructura interna de una clase.",
+      "Un diagrama que muestra los casos de uso de un sistema.",
+      "Un diagrama que muestra cómo un sistema de software es dividido en componentes.",
+      "Un diagrama que muestra las interacciones entre objetos."
+    ],
+    a: 2,
+    exp: "El diagrama de despliegue 'representa cómo un sistema de software es dividido en componente y la dependencia que hay entre los mismos'."
+  },
+  {
+    q: "¿Qué es una 'asociación' entre clases en UML?",
+    opts: [
+      "Una relación que muestra la herencia entre clases.",
+      "Una relación que muestra una conexión estática entre dos o más clases.",
+      "Una relación que muestra la agregación de objetos.",
+      "Una relación que muestra la dependencia temporal de una clase sobre otra."
+    ],
+    a: 1,
+    exp: "Una asociación es una relación que indica 'una conexión estática entre dos o más clases', y puede tener multiplicidades y rangos."
+  },
+  {
+    q: "¿Cuál es la principal ventaja de la reutilización de código en la POO?",
+    opts: [
+      "Mejora la productividad al aprovechar la inversión en el diseño de clases previas.",
+      "Reduce la complejidad de la herencia.",
+      "Reduce el tamaño de los objetos.",
+      "Permite el uso de SQL."
+    ],
+    a: 0,
+    exp: "La facilidad de reutilizar o reusar el software existente es uno de los grandes beneficios de la POO, lo que se traduce en una 'mejora de la productividad'."
+  },
+  {
+    q: "¿Qué es una 'clase abstracta'?",
+    opts: [
+      "Una clase que no se puede instanciar directamente.",
+      "Una clase que solo tiene un método.",
+      "Una clase que no tiene métodos.",
+      "Una clase que no tiene atributos."
+    ],
+    a: 0,
+    exp: "El documento explica que una clase abstracta no se puede instanciar directamente, y se utiliza para definir una interfaz que las subclases concretas deben implementar."
+  },
+  {
+    q: "Según el documento, ¿cuál de los siguientes es un ejemplo de lenguaje de dominio específico (DSL)?",
+    opts: [
+      "HTML",
+      "Java",
+      "C++",
+      "Python"
+    ],
+    a: 0,
+    exp: "El documento menciona que los lenguajes de dominio específico (DSLs) son lenguajes descriptivos como HTML, CSS y SQL."
+  },
+  {
+    q: "¿Qué es una 'agregación' en las relaciones entre clases?",
+    opts: [
+      "Una relación de herencia.",
+      "Una relación de asociación simple.",
+      "Una relación de 'todo-parte' fuerte, donde las partes no pueden existir sin el todo.",
+      "Una relación de 'todo-parte' débil, donde las partes pueden existir sin el todo."
+    ],
+    a: 3,
+    exp: "La agregación es una relación de 'todo-parte' que 'modela las estructuras jerárquicas' donde el 'todo' no es responsable de la creación ni de la destrucción de las 'partes'."
+  },
+  {
+    q: "¿Qué es una 'composición' en las relaciones entre clases?",
+    opts: [
+      "Una relación de 'todo-parte' fuerte, donde la parte no puede existir sin el todo.",
+      "Una relación de herencia.",
+      "Una relación de 'todo-parte' débil.",
+      "Una relación de dependencia."
+    ],
+    a: 0,
+    exp: "La composición es una relación de 'todo-parte' fuerte, donde el objeto 'todo' es responsable de la creación y destrucción de las 'partes'."
+  },
+  {
+    q: "¿Qué es UML?",
+    opts: [
+      "Un lenguaje unificado de modelado de sistemas.",
+      "Un tipo de patrón de diseño.",
+      "Una base de datos orientada a objetos.",
+      "Un lenguaje de programación."
+    ],
+    a: 0,
+    exp: "UML (Unified Modeling Language) es un 'lenguaje unificado de modelado que especifica, construye, visualiza y documenta los artefactos de un sistema de software'."
+  },
+  {
+    q: "¿Qué es una 'generalización' en la herencia?",
+    opts: [
+      "La técnica de encontrar características comunes en clases para crear una clase superior o padre.",
+      "La definición de una clase abstracta.",
+      "La creación de una clase hija a partir de una clase padre.",
+      "El proceso de instanciar un objeto."
+    ],
+    a: 0,
+    exp: "La generalización es la técnica de encontrar 'las características comunes en las clases', para crear 'una superclase o clase padre' que agrupe esas características."
+  },
+  {
+    q: "¿Qué es una 'especialización' en la herencia?",
+    opts: [
+      "El proceso de reutilización de una clase existente.",
+      "La creación de una subclase o clase hija con características propias a partir de una clase padre.",
+      "La técnica de encontrar características comunes entre clases.",
+      "El proceso de crear un diagrama de clases."
+    ],
+    a: 1,
+    exp: "La especialización es la técnica de 'crear una subclase o clase hija a partir de una superclase', heredando las características de la clase padre y añadiendo sus propias características únicas."
+  },
+  {
+    q: "¿Qué es la 'cohesión' en la POO?",
+    opts: [
+      "La capacidad de un objeto para ser reutilizado.",
+      "El grado en el que un elemento de software cumple con sus responsabilidades.",
+      "El grado de acoplamiento entre clases.",
+      "La forma en que se comunican los objetos."
+    ],
+    a: 1,
+    exp: "La cohesión es 'el grado en el que un componente de software cumple con una única función o con el conjunto de responsabilidades para las que fue diseñado'."
+  },
+  {
+    q: "¿Qué es un 'patrón de diseño'?",
+    opts: [
+      "Un tipo de lenguaje de programación.",
+      "Una solución probada y validada para resolver problemas de diseño de software.",
+      "Una forma de organizar las variables de un programa.",
+      "Un diagrama UML."
+    ],
+    a: 1,
+    exp: "Los patrones de diseño son 'soluciones probadas a problemas habituales en el diseño de software' que han sido validadas por la experiencia."
+  },
+  {
+    q: "¿Cuál de los siguientes es un patrón GOF de 'creación'?",
+    opts: [
+      "Singleton.",
+      "Adapter.",
+      "Chain of Responsibility.",
+      "Observer."
+    ],
+    a: 0,
+    exp: "El documento lista a 'Singleton' como un patrón de diseño de creación que 'garantiza la existencia de una única instancia para una clase'."
+  },
+  {
+    q: "¿Qué tipo de diagrama UML muestra la estructura interna de una clase?",
+    opts: [
+      "Diagrama de estructura compuesta.",
+      "Diagrama de clases.",
+      "Diagrama de secuencia.",
+      "Diagrama de paquetes."
+    ],
+    a: 0,
+    exp: "Los diagramas de estructura compuesta se usan para mostrar la 'estructura interna de una clase'."
+  },
+  {
+    q: "¿Cuál es la función principal de los 'mecanismos de extensión' de UML?",
+    opts: [
+      "Definir el flujo de control de un sistema.",
+      "Permitir la adaptación de UML a nuevas tecnologías.",
+      "Añadir nuevas reglas de sintaxis.",
+      "Crear nuevas instancias de clases."
+    ],
+    a: 1,
+    exp: "UML proporciona mecanismos de extensión 'para poder expresar todos los matices posibles... y adaptar UML de manera controlada a las necesidades de nuevas tecnologías'."
+  },
+  {
+    q: "¿Qué es el 'acoplamiento' en la POO?",
+    opts: [
+      "El grado de dependencia entre los componentes de software.",
+      "Una técnica de herencia.",
+      "Una relación entre una clase y un objeto.",
+      "El proceso de creación de nuevos objetos."
+    ],
+    a: 0,
+    exp: "El acoplamiento se refiere al 'grado de dependencia o conexión que existe entre dos componentes de software'."
+  },
+  {
+    q: "¿Qué patrón de diseño GOF de comportamiento 'permite volver a estados anteriores del sistema'?",
+    opts: [
+      "Strategy.",
+      "Mediator.",
+      "Memento.",
+      "Observer."
+    ],
+    a: 2,
+    exp: "El patrón de comportamiento 'Memento (Recuerdo)' 'permite volver a estados anteriores del sistema'."
+  },
+  {
+    q: "Según el documento, ¿qué es 'RUP'?",
+    opts: [
+      "Un proceso de desarrollo de software.",
+      "Un lenguaje de programación.",
+      "Un patrón de diseño.",
+      "Una base de datos."
+    ],
+    a: 0,
+    exp: "RUP (Proceso Racional Unificado) es un 'proceso de desarrollo de software' que se caracteriza por ser iterativo e incremental."
+  },
+  {
+    q: "¿Cuál de las siguientes es una de las fases principales de RUP?",
+    opts: [
+      "Análisis.",
+      "Diseño.",
+      "Transición.",
+      "Depuración."
+    ],
+    a: 2,
+    exp: "El documento menciona las fases de 'inicio', 'elaboración', 'construcción' y 'transición' de RUP."
+  },
+  {
+    q: "¿Qué es una 'restricción' en UML?",
+    opts: [
+      "Una regla que permite añadir a un bloque de construcción de UML, nuevas reglas o modificar las existentes.",
+      "Un tipo de diagrama.",
+      "Una forma de herencia.",
+      "Una técnica de polimorfismo."
+    ],
+    a: 0,
+    exp: "Las restricciones 'permiten añadir a un bloque de construcción de UML, nuevas reglas o modificar las existentes'."
+  },
+  {
+    q: "¿Qué es un 'diagrama de secuencia'?",
+    opts: [
+      "Un diagrama que muestra la estructura interna de las clases.",
+      "Un diagrama que muestra la interacción entre objetos a lo largo del tiempo.",
+      "Un diagrama que representa el flujo de control de un programa.",
+      "Un diagrama que muestra el hardware del sistema."
+    ],
+    a: 1,
+    exp: "Un diagrama de secuencia 'muestra cómo los objetos interactúan entre ellos y el orden en que se producen los mensajes'."
+  },
+  {
+    q: "¿Qué patrón de diseño GOF 'permite disponer de varios métodos para resolver un problema y elegir cuál utilizar en tiempo de ejecución'?",
+    opts: [
+      "Mediator (Mediador).",
+      "Strategy (Estrategia).",
+      "Observer (Observador).",
+      "Template Method (Método plantilla)."
+    ],
+    a: 1,
+    exp: "El patrón de comportamiento 'Strategy' 'permite disponer de varios métodos para resolver un problema y elegir cuál utilizar en tiempo de ejecución'."
+  },
+  {
+    q: "¿Qué es la 'abstracción' en la POO?",
+    opts: [
+      "La capacidad de centrarse en lo esencial de un objeto sin atender a los detalles.",
+      "El proceso de ocultar los datos de un objeto.",
+      "Una técnica para crear nuevos objetos a partir de clases.",
+      "La forma en que se comunican los objetos."
+    ],
+    a: 0,
+    exp: "La abstracción es 'el proceso mental de centrarse en lo esencial de un objeto sin atender a los detalles y las particularidades del objeto'."
+  },
+  {
+    q: "¿Qué tipo de diagramas UML 'captan los aspectos dinámicos de un sistema'?",
+    opts: [
+      "Diagramas estructurales.",
+      "Diagramas de despliegue.",
+      "Diagramas de comportamiento.",
+      "Diagramas de paquetes."
+    ],
+    a: 2,
+    exp: "Los diagramas de comportamiento 'captan los aspectos dinámicos de un sistema', a diferencia de los estructurales que se centran en la parte estática."
+  },
+  {
+    q: "¿Qué es un 'meta-objeto'?",
+    opts: [
+      "Un tipo de dato abstracto.",
+      "Un patrón de diseño.",
+      "Una representación en tiempo de ejecución de una clase.",
+      "Una variable de un objeto."
+    ],
+    a: 2,
+    exp: "Una clase puede tener una representación (meta-objeto) en tiempo de ejecución, 'proporcionando apoyo en tiempo de ejecución para la manipulación de los datos relacionados con la clase'."
+  },
+  {
+    q: "¿Qué son los 'bloques de construcción' de UML?",
+    opts: [
+      "Elementos, relaciones y diagramas.",
+      "Atributos, operaciones e identidad.",
+      "RUP, GOF y GRASP.",
+      "Clases, objetos y métodos."
+    ],
+    a: 0,
+    exp: "Los bloques de construcción de UML son 'elementos, relaciones y diagramas'."
+  },
+  {
+    q: "¿Qué es un 'diagrama de objetos' en UML?",
+    opts: [
+      "Un diagrama que muestra la relación entre objetos por medio de ejemplos del mundo real en un momento dado.",
+      "Un diagrama que muestra los casos de uso.",
+      "Un diagrama que muestra el hardware del sistema.",
+      "Un diagrama que muestra la relación entre clases."
+    ],
+    a: 0,
+    exp: "Un diagrama de objetos 'muestra la relación entre objetos por medio de ejemplos del mundo real e ilustra cómo se verá un sistema en un momento dado'."
+  },
+  {
+    q: "¿Qué patrón de diseño GOF 'garantiza, la existencia de una única instancia para una clase'?",
+    opts: [
+      "Prototype.",
+      "Facade.",
+      "Factory Method.",
+      "Singleton."
+    ],
+    a: 3,
+    exp: "El patrón 'Singleton' debe 'garantizar, la existencia de una única instancia para una clase y la creación de un mecanismo de acceso global a dicha instancia'."
+  },
+  {
+    q: "¿Qué es una 'recopilación de basura' (garbage collection) en la POO?",
+    opts: [
+      "Una técnica para destruir automáticamente los objetos sin referencias.",
+      "Un método de compilación de programas.",
+      "Una forma de organizar datos en la memoria.",
+      "Una técnica de limpieza de archivos."
+    ],
+    a: 0,
+    exp: "La recolección de basura es la técnica que 'se encarga de destruir automáticamente, y por tanto desvincular la memoria asociada, los objetos que hayan quedado sin ninguna referencia a ellos'."
+  },
+  {
+    q: "¿Qué es 'GRASP'?",
+    opts: [
+      "Un conjunto de patrones de asignación de responsabilidades.",
+      "Un tipo de diagrama UML.",
+      "Un lenguaje de programación.",
+      "Una fase del proceso RUP."
+    ],
+    a: 0,
+    exp: "GRASP (General Responsibility Assignment Software Patterns) es un conjunto de patrones que 'guían en la asignación de responsabilidades a clases y objetos' para lograr un buen diseño de software."
+  }
+];
+
+// --- Render de todas las preguntas a la vez ---
+const quiz = document.getElementById('quiz');
+const totalEl = document.getElementById('total');
+const answeredEl = document.getElementById('answered');
+const scoreEl = document.getElementById('score');
+const correctsEl = document.getElementById('corrects');
+const liveEl = document.getElementById('live');
+const bar = document.getElementById('bar');
+
+let score = 0;
+let answered = 0;
+
+function updateHud(){
+  const total = QUESTIONS.length;
+  totalEl.textContent = total;
+  answeredEl.textContent = answered;
+  scoreEl.textContent = score;
+  correctsEl.textContent = score;
+  const pct = total ? Math.round((score/total)*100) : 0;
+  liveEl.textContent = pct;
+  bar.style.width = `${Math.min(100, (answered/total)*100)}%`;
+}
+
+function makeQuestionCard(qobj, index){
+  const wrapper = document.createElement('article');
+  wrapper.className = 'card';
+
+  const q = document.createElement('div');
+  q.className = 'q';
+  q.innerHTML = (index+1) + '. ' + qobj.q;
+  wrapper.appendChild(q);
+
+  const opts = document.createElement('div');
+  opts.className = 'opts';
+
+  qobj.opts.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = text;
+    btn.addEventListener('click', () => handleAnswer(btn, i, qobj));
+    opts.appendChild(btn);
+  });
+
+  const fb = document.createElement('div');
+  fb.className = 'explain';
+  fb.id = 'fb-' + index;
+
+  wrapper.appendChild(opts);
+  wrapper.appendChild(fb);
+
+  return wrapper;
+}
+
+function handleAnswer(button, selectedIdx, qobj){
+  if (button.parentElement.dataset.locked === '1') return; // ya corregida
+
+  const buttons = Array.from(button.parentElement.querySelectorAll('.opt'));
+  buttons.forEach(b => b.disabled = true);
+
+  const correct = qobj.a;
+  if (selectedIdx === correct){
+    button.classList.add('correct');
+    score++;
+    setFeedback(button, `✔️ ¡Correcto! ${qobj.exp || ''}`);
+  } else {
+    button.classList.add('wrong');
+    buttons[correct].classList.add('correct');
+    setFeedback(button, `❌ No es correcto. Respuesta correcta: <strong>${buttons[correct].textContent}</strong>. ${qobj.exp || ''}`);
+  }
+
+  answered++;
+  button.parentElement.dataset.locked = '1';
+  updateHud();
+}
+
+function setFeedback(button, html){
+  const fb = button.parentElement.parentElement.querySelector('.explain');
+  fb.innerHTML = html;
+}
+
+function resetAll(){
+  score = 0;
+  answered = 0;
+  // limpiar y volver a renderizar
+  quiz.innerHTML = '';
+  QUESTIONS.forEach((q, i) => quiz.appendChild(makeQuestionCard(q, i)));
+  updateHud();
+}
+
+document.getElementById('btnReset').addEventListener('click', resetAll);
+
+// Inicializar
+resetAll();
+</script>
+</body>
+</html>

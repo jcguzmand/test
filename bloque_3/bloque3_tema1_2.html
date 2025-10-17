@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tema 1 – Cuestionario (50 preguntas)</title>
+  <style>
+    :root{
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --right: #16a34a;
+      --wrong: #dc2626;
+      --btn: #1f2937;
+      --btn-hover: #374151;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% 0%, #0b1220, var(--bg)); color: var(--text); min-height: 100vh; }
+    header { position: sticky; top: 0; background: rgba(15,23,42,.7); backdrop-filter: blur(6px); border-bottom: 1px solid rgba(255,255,255,.08); padding: 12px 16px; z-index: 10; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 18px; }
+    h1 { margin: 0; font-size: clamp(22px, 3.5vw, 34px); } .sub { color: var(--muted); }
+    .board { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .pill { font-size: 13px; color: var(--muted); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); }
+    .btn { background: linear-gradient(180deg,#111827,#0b1220); color: var(--text); border: 1px solid rgba(255,255,255,.1); padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: transform .06s ease, filter .2s ease; }
+    .btn:hover { filter: brightness(1.1); } .btn:active { transform: translateY(1px); }
+    .grid { display: grid; gap: 16px; } .card { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 18px; }
+    .q { font-size: clamp(16px, 2.2vw, 20px); line-height: 1.35; margin-bottom: 12px; } .opts { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 640px) { .opts { grid-template-columns: 1fr 1fr; } }
+    .opt { background: var(--btn); border: 1px solid rgba(255,255,255,.08); color: var(--text); padding: 12px 14px; border-radius: 12px; text-align: left; cursor: pointer; transition: transform .06s ease, background .2s; }
+    .opt:hover { background: var(--btn-hover); } .opt[disabled] { opacity: .9; cursor: not-allowed; }
+    .opt.correct { outline: 2px solid var(--right); box-shadow: 0 0 0 3px rgba(22,163,74,.2) inset; }
+    .opt.wrong { outline: 2px solid var(--wrong); box-shadow: 0 0 0 3px rgba(220,38,38,.2) inset; }
+    .explain { color: var(--muted); font-size: 14px; margin-top: 8px; min-height: 20px; }
+    .summary { margin: 18px 0 6px; } .footbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .progress { height: 10px; width: 100%; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+    .bar { height: 100%; width: 0; background: linear-gradient(90deg, #06b6d4, #22d3ee); transition: width .35s ease; }
+    footer { padding: 24px 16px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+<header><div class="container">
+  <h1>Tema 1 – Cuestionario</h1>
+  <div class="board">
+    <div class="pill">Respondidas: <span id="answered">0</span> / <span id="total">0</span></div>
+    <div class="pill">Puntos: <span id="score">0</span></div>
+    <div class="pill">Correctas: <span id="corrects">0</span></div>
+    <button id="btnReset" class="btn">Reiniciar</button>
+  </div>
+  <div class="progress" style="margin-top:10px"><div id="bar" class="bar"></div></div>
+</div></header>
+<main class="container"><section id="quiz" class="grid"></section><div class="summary"><div class="pill">Resultado en vivo: <strong><span id="live">0</span>%</strong></div></div></main>
+<footer>Cuestionario con 50 preguntas del Tema 1. Haz clic en cada opción para autocorregir.</footer>
+
+<script>
+
+const QUESTIONS = [
+  {
+    "q": "¿Cuál es uno de los objetivos de un buen diseño de base de datos?",
+    "opts": [
+      "Aumentar la redundancia para tener copias de seguridad.",
+      "Generar datos de salida de forma desordenada.",
+      "Evitar problemas como la inconsistencia y la dificultad de acceso a los datos.",
+      "Depender del lenguaje de programación específico."
+    ],
+    "a": 2,
+    "exp": "Según el documento, un buen diseño debe evitar problemas como la redundancia, la inconsistencia, la dificultad de acceso a los datos y los problemas de seguridad."
+  },
+  {
+    "q": "¿Qué se entiende por 'redundancia' en el diseño de una base de datos?",
+    "opts": [
+      "Un dato que no tiene un valor determinado.",
+      "Repetición de información (información duplicada).",
+      "La existencia de información contradictoria.",
+      "Problemas de seguridad al acceder a los datos."
+    ],
+    "a": 1,
+    "exp": "La redundancia es la repetición de información o datos duplicados."
+  },
+  {
+    "q": "Según Thomas H. Grayson, ¿qué cualidad debe poseer un buen diseño de base de datos?",
+    "opts": [
+      "Ser dependiente del lenguaje de programación.",
+      "Almacenar información redundante.",
+      "No mantener la integridad de los datos.",
+      "Reflejar la estructura del problema en el mundo real."
+    ],
+    "a": 3,
+    "exp": "El documento menciona que un buen diseño debe reflejar la estructura del problema en el mundo real, ser capaz de representar todos los datos esperados, evitar el almacenamiento de información redundante y mantener la integridad de los datos."
+  },
+  {
+    "q": "¿Cuál es la primera fase en el diseño de una base de datos?",
+    "opts": [
+      "Diseño Físico.",
+      "Diseño Lógico.",
+      "Diseño Conceptual.",
+      "Esquematización."
+    ],
+    "a": 2,
+    "exp": "Las fases del diseño de una base de datos son: Fase 1 (Diseño Conceptual), Fase 2 (Diseño Lógico) y Fase 3 (Diseño Físico)."
+  },
+  {
+    "q": "El diseño de una base de datos comienza a partir de:",
+    "opts": [
+      "El diccionario de datos de un SGBD.",
+      "Un conjunto de transacciones de prueba.",
+      "La especificación de requisitos del usuario.",
+      "La traducción del esquema lógico a un SGBD."
+    ],
+    "a": 2,
+    "exp": "Para diseñar una base de datos, se parte de la especificación de requisitos del usuario."
+  },
+  {
+    "q": "Un modelo conceptual, como el Entidad-Relación, ¿de qué trata?",
+    "opts": [
+      "La representación física de los datos en un sistema específico.",
+      "La estructura de archivos electrónicos en el disco duro.",
+      "Representar los elementos que intervienen en un problema y sus relaciones.",
+      "La optimización de las consultas para un SGBD."
+    ],
+    "a": 2,
+    "exp": "El diseño conceptual describe las estructuras de datos y las restricciones de integridad. Representa los elementos que intervienen en un problema y sus relaciones."
+  },
+  {
+    "q": "¿Cuál de estas fases del diseño de bases de datos es independiente del SGBD específico?",
+    "opts": [
+      "Diseño Lógico y Físico.",
+      "Diseño Conceptual.",
+      "Diseño Lógico.",
+      "Diseño Físico."
+    ],
+    "a": 1,
+    "exp": "La tabla de dependencia de las fases con el SGBD muestra que el 'Diseño conceptual' es independiente tanto del tipo de SGBD como del SGBD específico."
+  },
+  {
+    "q": "¿Qué modelo es el más utilizado para el diseño conceptual, introducido por Peter Chen?",
+    "opts": [
+      "Modelo de Red.",
+      "Modelo Entidad-Relación (E/R).",
+      "Modelo Multidimensional.",
+      "Modelo de Base de Datos Plana."
+    ],
+    "a": 1,
+    "exp": "El modelo más utilizado para el diseño conceptual es el modelo entidad-relación (E/R), introducido por Peter Chen en 1976."
+  },
+  {
+    "q": "En el modelo Entidad-Relación, ¿qué es una entidad?",
+    "opts": [
+      "La representación gráfica de un algoritmo o proceso.",
+      "Un valor que no puede ser nulo.",
+      "Una fila de una tabla.",
+      "Un tipo de objeto sobre el que se recoge información."
+    ],
+    "a": 3,
+    "exp": "Una entidad es un tipo de objeto sobre el que se recoge información. Puede ser una persona, una cosa, un concepto o un suceso."
+  },
+  {
+    "q": "¿Qué tipo de entidad se representa con un cuadrado con el nombre de la entidad en el interior?",
+    "opts": [
+      "Entidad débil.",
+      "Entidad conceptual.",
+      "Entidad fuerte.",
+      "Entidad abstracta."
+    ],
+    "a": 2,
+    "exp": "Una entidad fuerte se representa gráficamente con un cuadrado con el nombre de la entidad en el interior."
+  },
+  {
+    "q": "¿Cuál es la característica principal de una entidad débil?",
+    "opts": [
+      "No puede tener atributos.",
+      "Su existencia no depende de ninguna otra entidad.",
+      "Se representa con un rombo.",
+      "Su existencia solo puede darse si existen ocurrencias de una entidad fuerte de la que dependen."
+    ],
+    "a": 3,
+    "exp": "Una entidad débil es aquella cuya ocurrencia solo puede aparecer cuando existen ocurrencias en la entidad fuerte de la que dependen."
+  },
+  {
+    "q": "¿Qué representa una 'relación' entre entidades?",
+    "opts": [
+      "Una fila en una tabla.",
+      "La repetición de datos.",
+      "Una correspondencia o asociación entre dos o más entidades.",
+      "La clave primaria de una tabla."
+    ],
+    "a": 2,
+    "exp": "Una relación es una correspondencia o asociación entre dos o más entidades."
+  },
+  {
+    "q": "¿Qué concepto describe la cantidad de ocurrencias de una entidad que pueden estar asociadas con las ocurrencias de otra entidad en una relación?",
+    "opts": [
+      "Obligatoriedad.",
+      "Dominio.",
+      "Cardinalidad.",
+      "Dependencia."
+    ],
+    "a": 2,
+    "exp": "La cardinalidad describe la cantidad de ocurrencias de una entidad que pueden estar asociadas con las ocurrencias de otra entidad en una relación."
+  },
+  {
+    "q": "En el modelo E/R, una relación 'Uno a Uno (1:1)' significa que:",
+    "opts": [
+      "Una ocurrencia de la entidad-origen se relaciona con una o varias de la entidad-destino.",
+      "Una ocurrencia de la entidad-origen se relaciona como máximo con una de la entidad-destino.",
+      "Una ocurrencia de la entidad-origen se relaciona con varias de la entidad-destino, y viceversa.",
+      "Varias ocurrencias de la entidad-origen se relacionan con una de la entidad-destino."
+    ],
+    "a": 1,
+    "exp": "En una relación 'Uno a Uno (1:1)', una ocurrencia de la entidad-origen puede asociarse como máximo a una ocurrencia de la entidad-destino."
+  },
+  {
+    "q": "¿Qué tipo de jerarquía ocurre cuando alguna ocurrencia de la entidad genérica no corresponde con ninguna ocurrencia de las subentidades?",
+    "opts": [
+      "Jerarquía total.",
+      "Jerarquía superpuesta.",
+      "Jerarquía exclusiva.",
+      "Jerarquía parcial."
+    ],
+    "a": 3,
+    "exp": "Una jerarquía es parcial cuando alguna ocurrencia de la entidad genérica no corresponde con ninguna ocurrencia de las subentidades."
+  },
+  {
+    "q": "¿Cuál es la principal característica de un 'flujo de datos' en un diagrama de flujo de datos (DFD)?",
+    "opts": [
+      "Representa una función que manipula datos.",
+      "Representa un conjunto de datos que se mueven de un lugar a otro.",
+      "Representa el inicio o el final del diagrama.",
+      "Representa un lugar para almacenar datos."
+    ],
+    "a": 1,
+    "exp": "Un flujo de datos representa un conjunto de datos que se mueven de un lugar a otro. Los flujos de datos son unidireccionales, es decir, solo pueden moverse en una dirección."
+  },
+  {
+    "q": "En el contexto de los diagramas de flujo de datos, ¿qué es un 'proceso'?",
+    "opts": [
+      "Un lugar donde se almacenan datos.",
+      "Una entidad externa que se comunica con el sistema.",
+      "Una funcionalidad que transforma o manipula datos de entrada para generar datos de salida.",
+      "Un elemento que indica el inicio o fin del diagrama."
+    ],
+    "a": 2,
+    "exp": "Un proceso muestra una funcionalidad que debe realizar el sistema para transformar o manipular los datos de entrada, generando datos de salida."
+  },
+  {
+    "q": "Según el documento, ¿qué herramienta es la representación gráfica de un algoritmo o proceso?",
+    "opts": [
+      "Diagrama de Flujo de Datos (DFD).",
+      "Modelo Entidad-Relación (E/R).",
+      "Flujograma (Diagrama de Flujo).",
+      "Diccionario de datos."
+    ],
+    "a": 2,
+    "exp": "Un flujograma (también conocido como diagrama de flujo) es la representación gráfica de un algoritmo o proceso."
+  },
+  {
+    "q": "En un flujograma, ¿qué elemento se representa como una flecha con una única dirección?",
+    "opts": [
+      "Actividad o Tarea.",
+      "Decisión.",
+      "Flujo.",
+      "Inicio/Fin."
+    ],
+    "a": 2,
+    "exp": "El flujo se representa como una flecha con una única dirección e indica la dirección en la que se van ejecutando los distintos elementos del proceso."
+  },
+  {
+    "q": "¿Cuál de las siguientes es una regla de construcción de los flujogramas?",
+    "opts": [
+      "Los flujogramas deben construirse de abajo hacia arriba.",
+      "No pueden tener más de un inicio y un final.",
+      "Las líneas de flujo pueden ser curvas.",
+      "Todo diagrama de flujo debe tener un inicio y un final."
+    ],
+    "a": 3,
+    "exp": "Una de las reglas básicas para la construcción de un diagrama de flujo es que todo diagrama debe tener un inicio y un final."
+  },
+  {
+    "q": "En la Fase 2 del diseño de bases de datos, ¿en qué se convierte el esquema conceptual?",
+    "opts": [
+      "En un esquema físico.",
+      "En un esquema lógico.",
+      "En la especificación de requisitos del usuario.",
+      "En un flujograma."
+    ],
+    "a": 1,
+    "exp": "En la Fase 2, 'Diseño lógico', se convierte el esquema conceptual en un esquema lógico."
+  },
+  {
+    "q": "¿De qué depende el diseño lógico de una base de datos?",
+    "opts": [
+      "Del lenguaje de programación.",
+      "Del SGBD específico que se vaya a utilizar.",
+      "Del tipo de SGBD que se vaya a utilizar, pero no del software concreto.",
+      "De la cantidad de tuplas en las tablas."
+    ],
+    "a": 2,
+    "exp": "El diseño lógico depende del tipo de SGBD que se vaya a utilizar, pero no depende del software concreto."
+  },
+  {
+    "q": "En el modelo lógico relacional, ¿qué es una 'tupla'?",
+    "opts": [
+      "Una columna de la tabla.",
+      "El nombre de la tabla.",
+      "Una fila de la tabla, también llamada instancia o registro.",
+      "Una clave primaria."
+    ],
+    "a": 2,
+    "exp": "Una tupla es una fila de la tabla. También se denomina instancia o registro."
+  },
+  {
+    "q": "¿Qué es la 'cardinalidad' en el modelo relacional?",
+    "opts": [
+      "El número de columnas de una tabla.",
+      "El número de atributos de una tabla.",
+      "El número de filas de una tabla.",
+      "El número de vistas en una base de datos."
+    ],
+    "a": 2,
+    "exp": "La cardinalidad es el número de tuplas o filas que contiene una tabla."
+  },
+  {
+    "q": "En el modelo relacional, ¿qué es una 'clave primaria'?",
+    "opts": [
+      "Un atributo que puede tomar valores nulos.",
+      "Un conjunto de atributos que identifica de manera única a cada tupla en una relación.",
+      "Un atributo que sirve para relacionar tablas.",
+      "Un campo que puede tener valores repetidos."
+    ],
+    "a": 1,
+    "exp": "Una clave primaria es un conjunto de atributos que identifica de manera única y mínima a cada tupla en una relación."
+  },
+  {
+    "q": "¿Cuál es la principal diferencia entre una clave primaria y una clave candidata?",
+    "opts": [
+      "Una clave primaria no puede tener valores nulos, mientras que una candidata sí.",
+      "Una clave candidata no puede ser única.",
+      "La clave primaria es la que el diseñador escoge de entre las claves candidatas.",
+      "Una tabla puede tener varias claves primarias."
+    ],
+    "a": 2,
+    "exp": "Una clave candidata es un conjunto de atributos que identifica de forma única a cada tupla, al igual que una clave primaria. La diferencia es que una tabla puede tener varias claves candidatas, de las cuales se escoge una para ser la clave primaria."
+  },
+  {
+    "q": "En el modelo relacional, ¿qué es una 'clave foránea' o 'ajena'?",
+    "opts": [
+      "Un atributo que no se puede indexar.",
+      "Un atributo que no se puede modificar.",
+      "Una columna que hace referencia a una clave primaria de otra tabla.",
+      "Una clave que no es candidata."
+    ],
+    "a": 2,
+    "exp": "Una clave foránea es un conjunto de atributos de una tabla que hace referencia a una clave candidata (normalmente la clave primaria) en la misma o en otra tabla."
+  },
+  {
+    "q": "¿Qué regla de integridad establece que el valor de una clave foránea debe coincidir con un valor de la clave primaria de la tabla a la que se refiere o ser nulo?",
+    "opts": [
+      "Regla de integridad de entidad de la clave primaria.",
+      "Regla de integridad de dominio.",
+      "Regla de integridad referencial.",
+      "Regla de unicidad de la clave primaria."
+    ],
+    "a": 2,
+    "exp": "La regla de integridad referencial indica que el valor de una clave foránea en una tupla de la relación R1 debe ser o bien nulo, o bien un valor de la clave primaria de alguna tupla de la relación R2 a la que hace referencia."
+  },
+  {
+    "q": "¿Qué se busca evitar con el proceso de normalización de una base de datos?",
+    "opts": [
+      "Garantizar la unicidad de los datos.",
+      "Mejorar el rendimiento de las consultas.",
+      "Aumentar la complejidad de las tablas.",
+      "Evitar anomalías de actualización, inserción y borrado."
+    ],
+    "a": 3,
+    "exp": "La normalización es un proceso de dividir los datos de una base de datos en tablas para evitar anomalías (errores) de actualización, inserción y borrado."
+  },
+  {
+    "q": "¿Qué establece la Primera Forma Normal (1FN)?",
+    "opts": [
+      "Los atributos no clave deben depender funcionalmente de la clave completa.",
+      "No puede haber dependencias funcionales transitivas.",
+      "Los valores de los atributos deben ser atómicos (únicos e indivisibles) y no pueden tener tuplas repetidas.",
+      "Todos los atributos deben depender de la clave candidata."
+    ],
+    "a": 2,
+    "exp": "Una tabla está en 1FN si y solo si los valores que componen el atributo de una tupla son atómicos (valores únicos e indivisibles). Además, deben tener una clave primaria y atributos no nulos, y no pueden tener tuplas repetidas."
+  },
+  {
+    "q": "Una tabla está en Segunda Forma Normal (2FN) si:",
+    "opts": [
+      "Se encuentra en 1FN y los valores de los atributos son atómicos.",
+      "No tiene dependencias funcionales parciales, es decir, todo atributo no clave debe depender funcionalmente de la clave completa.",
+      "No existen dependencias funcionales transitivas.",
+      "Todos sus atributos dependen únicamente de una clave candidata."
+    ],
+    "a": 1,
+    "exp": "Una tabla está en 2FN si está en 1FN y si todos los atributos no clave dependen funcionalmente de la clave primaria completa."
+  },
+  {
+    "q": "Para que una tabla cumpla la Tercera Forma Normal (3FN), debe:",
+    "opts": [
+      "No tener dependencias funcionales parciales.",
+      "No tener dependencias funcionales transitivas.",
+      "Los valores de los atributos deben ser atómicos.",
+      "No contener claves foráneas."
+    ],
+    "a": 1,
+    "exp": "Una relación está en 3FN si cumple la 2FN y no existen dependencias funcionales transitivas de los atributos no clave con respecto a la clave primaria."
+  },
+  {
+    "q": "¿Qué establece la forma normal de Boyce-Codd (FNBC)?",
+    "opts": [
+      "Cada determinante debe ser una clave candidata.",
+      "Los atributos deben ser atómicos.",
+      "Cada atributo no clave debe depender de la clave completa.",
+      "Elimina las dependencias transitivas."
+    ],
+    "a": 0,
+    "exp": "Una relación está en la forma normal de Boyce-Codd (FNBC) si cada determinante es una clave candidata. La FNBC es una forma más estricta de 3FN."
+  },
+  {
+    "q": "¿Qué es la desnormalización?",
+    "opts": [
+      "El proceso de dividir una base de datos en tablas para evitar anomalías.",
+      "El proceso de convertir un esquema conceptual en un esquema físico.",
+      "La optimización para conseguir un acceso más eficiente, incluso si esto viola las reglas de normalización.",
+      "La unificación de datos para crear un diccionario de datos."
+    ],
+    "a": 2,
+    "exp": "La desnormalización es la técnica utilizada para combinar tablas normalizadas para mejorar el rendimiento de la aplicación, aunque esto pueda reintroducir redundancia de datos."
+  },
+  {
+    "q": "¿En qué consiste la Fase 3 del diseño de bases de datos?",
+    "opts": [
+      "Obtener una representación de las estructuras de datos que se usarán en la base de datos.",
+      "Crear un esquema conceptual a partir de los requisitos del usuario.",
+      "Definir el diccionario de datos de un SGBD concreto.",
+      "Traducir el esquema lógico global a un SGBD específico y diseñar la representación física de los datos."
+    ],
+    "a": 3,
+    "exp": "La Fase 3, 'Diseño Físico', consiste en la traducción del esquema lógico global al SGBD específico y el diseño de la representación física de los datos."
+  },
+  {
+    "q": "El objetivo principal de la normalización es:",
+    "opts": [
+      "Aumentar el número de tablas.",
+      "Reducir la redundancia de datos.",
+      "Incrementar la dificultad de acceso a los datos.",
+      "Unificar todos los datos en una sola tabla."
+    ],
+    "a": 1,
+    "exp": "El objetivo principal de la normalización es reducir la redundancia y evitar anomalías, al dividir la base de datos en tablas más pequeñas y lógicas."
+  },
+  {
+    "q": "En el modelo E/R, ¿qué es un atributo 'compuesto'?",
+    "opts": [
+      "Un atributo con un solo valor.",
+      "Un atributo que no se puede dividir.",
+      "Un atributo que consta de varios sub-atributos.",
+      "Un atributo con valores atómicos."
+    ],
+    "a": 2,
+    "exp": "Un atributo compuesto es aquel que consta de varios sub-atributos. Por ejemplo, la dirección puede estar compuesta por calle, ciudad, código postal, etc.."
+  },
+  {
+    "q": "¿Qué significa que una jerarquía de generalización/especialización sea 'superpuesta'?",
+    "opts": [
+      "Cada ocurrencia de la entidad genérica corresponde con al menos una ocurrencia de alguna subentidad.",
+      "Cada ocurrencia de la entidad genérica corresponde, como mucho, con una ocurrencia de una de las subentidades.",
+      "Alguna ocurrencia de la entidad genérica corresponde a ocurrencias de dos o más subentidades diferentes.",
+      "Alguna ocurrencia de la entidad genérica no corresponde con ninguna ocurrencia de las subentidades."
+    ],
+    "a": 2,
+    "exp": "Una jerarquía superpuesta es aquella en la que alguna ocurrencia de la entidad genérica corresponde a ocurrencias de dos o más subentidades diferentes."
+  },
+  {
+    "q": "¿Qué es un 'Sistema Gestor de Bases de Datos' (SGBD)?",
+    "opts": [
+      "Un hardware que almacena datos.",
+      "Una base de datos que solo se usa para transacciones.",
+      "Un software que define y controla la estructura, el almacenamiento y la manipulación de una base de datos.",
+      "Un lenguaje de programación para consultas."
+    ],
+    "a": 2,
+    "exp": "Un SGBD es un software que define y controla una estructura de datos, su almacenamiento, método de acceso y manipulación, tanto para el gestor de la base de datos como para los usuarios, manteniendo la integridad, confidencialidad y seguridad de dichos datos."
+  },
+  {
+    "q": "En un diagrama de flujo de datos, ¿qué elemento representa un lugar para almacenar datos?",
+    "opts": [
+      "Entidad Externa.",
+      "Proceso.",
+      "Flujo de datos.",
+      "Almacén de datos."
+    ],
+    "a": 3,
+    "exp": "Un almacén de datos (o archivo) representa un lugar para almacenar datos temporal o permanentemente. Los almacenes de datos no tienen por qué ser físicos."
+  },
+  {
+    "q": "Una de las reglas de construcción de los flujogramas es que la notación utilizada...",
+    "opts": [
+      "Debe depender del lenguaje de programación específico.",
+      "Debe tener un solo color.",
+      "No debe depender del lenguaje de programación.",
+      "Debe ser diferente para cada proceso."
+    ],
+    "a": 2,
+    "exp": "Una de las reglas de construcción es que la notación utilizada no debe depender del lenguaje de programación."
+  },
+  {
+    "q": "Según el documento, ¿qué es un 'procedimiento' o 'subrutina'?",
+    "opts": [
+      "El lenguaje para representar el esquema conceptual.",
+      "Un conjunto de atributos que identifica una tupla.",
+      "Un fragmento del programa que realiza una tarea concreta.",
+      "Un programa que define y controla una estructura de datos."
+    ],
+    "a": 2,
+    "exp": "Un procedimiento, subrutina o subprograma es un fragmento del programa que realiza una tarea concreta y recibe un nombre por el que puede ser llamado o activado desde otra parte del programa."
+  },
+  {
+    "q": "Un modelo de base de datos 'No-SQL' se caracteriza por:",
+    "opts": [
+      "No usar SQL como lenguaje de consultas principal.",
+      "Usar tablas con estructuras fijas y rígidas.",
+      "Soportar operaciones JOIN entre tablas.",
+      "Garantizar completamente las propiedades ACID (atomicidad, consistencia, aislamiento y durabilidad)."
+    ],
+    "a": 0,
+    "exp": "Las bases de datos no relacionales, o NO-SQL, difieren del modelo clásico de SGBDR en que no usan SQL como lenguaje principal de consultas y no requieren estructuras fijas como tablas."
+  },
+  {
+    "q": "¿Qué es la 'integridad' en el diseño de una base de datos?",
+    "opts": [
+      "Evitar la repetición de información.",
+      "Garantizar que los datos sean correctos, no estén duplicados, faltantes o alterados.",
+      "La dificultad de acceso a los datos.",
+      "La posibilidad de accesos por parte de personal no autorizado."
+    ],
+    "a": 1,
+    "exp": "La integridad es muy importante y debe evitar datos duplicados, faltantes, alterados e incorrectos."
+  },
+  {
+    "q": "¿Qué tipo de atributo se representa con un círculo, y si es un atributo identificativo, la línea que lo une a la entidad es discontinua?",
+    "opts": [
+      "Atributo derivado.",
+      "Atributo compuesto.",
+      "Atributo multivaluado.",
+      "Atributo atómico."
+    ],
+    "a": 0,
+    "exp": "Un atributo derivado se representa con un círculo discontinuo. Si es un atributo identificativo, la línea que lo une a la entidad es discontinua."
+  },
+  {
+    "q": "¿Qué es un atributo 'multivaluado'?",
+    "opts": [
+      "Un atributo con un solo valor para una entidad particular.",
+      "Un atributo que puede tener varios valores para una misma ocurrencia de una entidad.",
+      "Un atributo que no puede dividirse.",
+      "Un atributo que sirve para identificar de forma única una tupla."
+    ],
+    "a": 1,
+    "exp": "Un atributo multivaluado es aquel que puede tener varios valores para una misma ocurrencia de una entidad. Se representa gráficamente con un círculo doble."
+  },
+  {
+    "q": "¿Qué es un 'dominio de atributos'?",
+    "opts": [
+      "El número de tuplas de una tabla.",
+      "El nombre del atributo.",
+      "El conjunto de todos los posibles valores que puede tomar el atributo (el tipo de datos).",
+      "El número de columnas de una tabla."
+    ],
+    "a": 2,
+    "exp": "El dominio de un atributo es el conjunto de todos los posibles valores que puede tomar el atributo (el tipo de datos)."
+  },
+  {
+    "q": "¿Qué propiedad de los atributos se refiere a si deben tomar como mínimo un valor para todas y cada una de las ocurrencias del tipo de entidad al que pertenece?",
+    "opts": [
+      "Atributos multivaluados.",
+      "Atributos identificativos.",
+      "Atributos opcionales u obligatorios.",
+      "Atributos derivados."
+    ],
+    "a": 2,
+    "exp": "Los atributos pueden ser 'Opcionales u Obligatorios', lo que significa que se puede obligar a un atributo a que tome como mínimo, un valor para todas y cada una de las ocurrencias del tipo de entidad al que pertenece."
+  },
+  {
+    "q": "En el modelo E/R, ¿qué es la 'participación' o 'cardinalidad de la relación'?",
+    "opts": [
+      "El tipo de datos de un atributo.",
+      "Un conjunto de atributos que identifica una entidad.",
+      "El número de ocurrencias de una entidad que puede estar asociada con otra entidad en una relación.",
+      "La dependencia funcional de un atributo."
+    ],
+    "a": 2,
+    "exp": "La participación o cardinalidad de la relación es el número de ocurrencias de una entidad que puede estar asociada con las ocurrencias de otra entidad en una relación."
+  },
+  {
+    "q": "En el diseño de bases de datos, ¿a qué se refiere la 'optimización'?",
+    "opts": [
+      "Al proceso de normalización.",
+      "A la introducción de cambios para conseguir un acceso más eficiente a los datos.",
+      "A la conversión del esquema lógico a un SGBD específico.",
+      "A la partición de relaciones."
+    ],
+    "a": 1,
+    "exp": "La optimización consiste en introducir cambios para conseguir un acceso más eficiente."
+  },
+  {
+    "q": "¿Qué tipo de diagrama se utiliza para representar el flujo de datos y las transformaciones que sufren?",
+    "opts": [
+      "Diagrama de Flujo de Datos (DFD).",
+      "Flujograma (Diagrama de Flujo).",
+      "Modelo Entidad-Relación.",
+      "Diagrama de Clases."
+    ],
+    "a": 0,
+    "exp": "El diagrama de flujo de datos (DFD) es una técnica gráfica para representar los flujos de datos y las transformaciones que estos sufren en un sistema."
+  },
+  {
+    "q": "Según el documento, un 'SGBD' debe garantizar la:",
+    "opts": [
+      "Redundancia de datos.",
+      "Inconsistencia de datos.",
+      "Dependencia de los datos del programa.",
+      "Integridad, confidencialidad y seguridad de los datos."
+    ],
+    "a": 3,
+    "exp": "El SGBD es un software que define y controla la estructura de datos, manteniendo la integridad, confidencialidad y seguridad de dichos datos."
+  },
+  {
+    "q": "En el contexto de la base de datos, ¿qué se considera una 'columna'?",
+    "opts": [
+      "Un registro de información.",
+      "Un componente horizontal de la tabla.",
+      "Un componente vertical de una tabla de base de datos con un nombre y un tipo de datos específico.",
+      "Una tupla."
+    ],
+    "a": 2,
+    "exp": "Una columna es un componente vertical de una tabla de base de datos. Una columna tiene un nombre y un tipo de datos específico, por ejemplo, carácter, decimal o entero."
+  },
+  {
+    "q": "¿Cuál es un objetivo de un buen diseño de base de datos?",
+    "opts": [
+      "Ser difícil de mantener.",
+      "Evitar la redundancia de información.",
+      "Permitir el acceso no controlado a los datos.",
+      "Tener inconsistencia de información."
+    ],
+    "a": 1,
+    "exp": "Un buen diseño de base de datos tiene como objetivos, entre otros, ser fácil de mantener y evitar la redundancia (repetición de información)."
+  },
+  {
+    "q": "¿Qué se establece en la Fase 3, Diseño Físico, de la base de datos?",
+    "opts": [
+      "La especificación de requisitos del usuario.",
+      "El esquema conceptual.",
+      "El diccionario de datos de un SGBD.",
+      "La representación física de los datos y los mecanismos de seguridad."
+    ],
+    "a": 3,
+    "exp": "La Fase 3, Diseño Físico, incluye la traducción del esquema lógico al SGBD específico, el diseño de la representación física, el diseño de los mecanismos de seguridad y la monitorización del sistema."
+  },
+  {
+    "q": "¿Cuál es la característica principal de un modelo de datos 'relacional'?",
+    "opts": [
+      "No utiliza tablas.",
+      "Organiza y representa los datos en forma de tablas o relaciones.",
+      "No tiene clave primaria.",
+      "Es un modelo jerárquico."
+    ],
+    "a": 1,
+    "exp": "El modelo de datos relacional organiza y representa los datos en forma de tablas o relaciones."
+  },
+  {
+    "q": "¿Qué es la 'metodología' de diseño de bases de datos?",
+    "opts": [
+      "La forma de pensar de un programador.",
+      "El proceso para dividir el diseño en fases para obtener un esquema físico.",
+      "Un lenguaje para representar el esquema conceptual.",
+      "Un conjunto de reglas para la construcción de flujogramas."
+    ],
+    "a": 1,
+    "exp": "El objetivo de dividir el diseño en fases es conseguir un esquema físico que, posteriormente, se plasmará en un SGBD dando lugar a la base de datos."
+  },
+  {
+    "q": "¿Qué regla de integridad establece que la clave primaria no puede tener valores nulos?",
+    "opts": [
+      "Regla de integridad referencial.",
+      "Regla de integridad de entidad de la clave primaria.",
+      "Regla de unicidad de la clave primaria.",
+      "Regla de integridad de dominio."
+    ],
+    "a": 1,
+    "exp": "La regla de integridad de entidad de la clave primaria establece que la clave primaria de una relación no puede tomar valores nulos."
+  },
+  {
+    "q": "Un atributo que sirve para diferenciar una instancia de la entidad de otra distinta se denomina:",
+    "opts": [
+      "Atributo derivado.",
+      "Atributo multivaluado.",
+      "Atributo identificativo.",
+      "Atributo compuesto."
+    ],
+    "a": 2,
+    "exp": "Los atributos identificativos permiten diferenciar a una instancia de la entidad de otra distinta."
+  },
+  {
+    "q": "¿Cómo se representa la jerarquía 'exclusiva'?",
+    "opts": [
+      "Una ocurrencia de la entidad genérica corresponde, como mucho, con una ocurrencia de una de las subentidades.",
+      "Cada ocurrencia de la entidad genérica corresponde al menos con una ocurrencia de alguna subentidad.",
+      "Alguna ocurrencia de la entidad genérica no corresponde con ninguna ocurrencia de las subentidades.",
+      "Alguna ocurrencia de la entidad genérica corresponde a ocurrencias de dos o más subentidades diferentes."
+    ],
+    "a": 0,
+    "exp": "Una jerarquía es exclusiva cuando cada ocurrencia de la entidad genérica corresponde, como mucho, con una ocurrencia de una de las subentidades."
+  },
+  {
+    "q": "En el modelo E/R, ¿qué es un atributo 'compuesto'?",
+    "opts": [
+      "Un atributo con un solo valor para una entidad.",
+      "Un atributo que se puede descomponer en otros más pequeños.",
+      "Un atributo que no se puede dividir.",
+      "Un atributo que no tiene un valor determinado."
+    ],
+    "a": 1,
+    "exp": "Un atributo compuesto es un atributo que se puede dividir en sub-atributos. Por ejemplo, el atributo 'nombre completo' se puede dividir en 'nombre', 'apellido1' y 'apellido2'."
+  },
+  {
+    "q": "¿Qué significa que la cardinalidad de una relación sea 'Uno a Varios (1:N)'?",
+    "opts": [
+      "Una ocurrencia de la entidad-origen se relaciona con una única ocurrencia de la entidad-destino.",
+      "Una ocurrencia de la entidad-origen se relaciona con una o varias ocurrencias de la entidad-destino.",
+      "Varias ocurrencias de la entidad-origen se relacionan con una ocurrencia de la entidad-destino.",
+      "Ambas entidades pueden relacionarse con varias ocurrencias de la otra."
+    ],
+    "a": 1,
+    "exp": "En una relación 'Uno a Varios (1:N)', una ocurrencia de la entidad-origen se relaciona con una o varias ocurrencias de la entidad-destino."
+  },
+  {
+    "q": "¿Qué es la 'normalización' en una base de datos?",
+    "opts": [
+      "El proceso de combinar tablas para mejorar el rendimiento.",
+      "El proceso de dividir los datos de la base de datos en tablas para evitar anomalías.",
+      "La fase de traducción del esquema lógico a un SGBD.",
+      "El diseño de los mecanismos de seguridad."
+    ],
+    "a": 1,
+    "exp": "La normalización es un proceso de diseño de bases de datos que consiste en dividir los datos de una base de datos en tablas para evitar anomalías (errores) de actualización, inserción y borrado."
+  },
+  {
+    "q": "¿Qué se entiende por 'inconsistencia' en el diseño de una base de datos?",
+    "opts": [
+      "Información duplicada.",
+      "Información contradictoria o incongruente.",
+      "Dificultad para acceder a los datos.",
+      "Problemas de seguridad."
+    ],
+    "a": 1,
+    "exp": "La inconsistencia se define como la existencia de información contradictoria o incongruente."
+  },
+  {
+    "q": "¿Cuál de estas opciones NO es una cualidad de un buen diseño de base de datos según Thomas H. Grayson?",
+    "opts": [
+      "Ser claro, coherente y de fácil comprensión.",
+      "Reflejar la estructura del problema en el mundo real.",
+      "Almacenar información redundante.",
+      "Mantener la integridad de los datos."
+    ],
+    "a": 2,
+    "exp": "El documento especifica que una de las cualidades de un buen diseño es evitar el almacenamiento de información redundante."
+  },
+  {
+    "q": "El modelo Entidad-Relación fue introducido por:",
+    "opts": [
+      "Thomas H. Grayson.",
+      "ANSI/SPARC.",
+      "Peter Chen.",
+      "Edgar F. Codd."
+    ],
+    "a": 2,
+    "exp": "El modelo Entidad-Relación fue introducido por Peter Chen."
+  }
+];
+
+
+// Código JS igual que en el HTML original del usuario
+const quiz = document.getElementById('quiz');
+const totalEl = document.getElementById('total');
+const answeredEl = document.getElementById('answered');
+const scoreEl = document.getElementById('score');
+const correctsEl = document.getElementById('corrects');
+const liveEl = document.getElementById('live');
+const bar = document.getElementById('bar');
+
+let score = 0;
+let answered = 0;
+
+function updateHud() {
+  const total = QUESTIONS.length;
+  totalEl.textContent = total;
+  answeredEl.textContent = answered;
+  scoreEl.textContent = score;
+  correctsEl.textContent = score;
+  const pct = total ? Math.round((score/total)*100) : 0;
+  liveEl.textContent = pct;
+  bar.style.width = Math.min(100, (answered/total)*100) + '%';
+}
+
+function makeQuestionCard(qobj, index) {
+  const wrapper = document.createElement('article');
+  wrapper.className = 'card';
+
+  const q = document.createElement('div');
+  q.className = 'q';
+  q.innerHTML = (index+1) + '. ' + qobj.q;
+  wrapper.appendChild(q);
+
+  const opts = document.createElement('div');
+  opts.className = 'opts';
+
+  qobj.opts.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = text;
+    btn.addEventListener('click', () => handleAnswer(btn, i, qobj));
+    opts.appendChild(btn);
+  });
+
+  const fb = document.createElement('div');
+  fb.className = 'explain';
+
+  wrapper.appendChild(opts);
+  wrapper.appendChild(fb);
+
+  return wrapper;
+}
+
+function handleAnswer(button, selectedIdx, qobj) {
+  if (button.parentElement.dataset.locked === '1') return;
+
+  const buttons = Array.from(button.parentElement.querySelectorAll('.opt'));
+  buttons.forEach(b => b.disabled = true);
+
+  const correct = qobj.a;
+  if (selectedIdx === correct) {
+    button.classList.add('correct');
+    score++;
+    setFeedback(button, "✔️ ¡Correcto! " + (qobj.exp || ""));
+  } else {
+    button.classList.add('wrong');
+    buttons[correct].classList.add('correct');
+    setFeedback(button, "❌ No es correcto. Respuesta correcta: <strong>" + buttons[correct].textContent + "</strong>. " + (qobj.exp || ""));
+  }
+
+  answered++;
+  button.parentElement.dataset.locked = '1';
+  updateHud();
+}
+
+function setFeedback(button, html) {
+  const fb = button.parentElement.parentElement.querySelector('.explain');
+  fb.innerHTML = html;
+}
+
+function resetAll() {
+  score = 0;
+  answered = 0;
+  quiz.innerHTML = '';
+  QUESTIONS.forEach((q, i) => quiz.appendChild(makeQuestionCard(q, i)));
+  updateHud();
+}
+
+document.getElementById('btnReset').addEventListener('click', resetAll);
+resetAll();
+</script>
+</body>
+</html>

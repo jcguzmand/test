@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bloque 3 – Tema 5 JAVA y .NET</title>
+  <style>
+    :root{
+      --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#94a3b8; --accent:#22d3ee;
+      --right:#16a34a; --wrong:#dc2626; --btn:#1f2937; --btn-hover:#374151;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";background:radial-gradient(1200px 800px at 20% 0%,#0b1220,var(--bg));color:var(--text);min-height:100vh}
+    header{position:sticky;top:0;background:rgba(15,23,42,.7);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,.08);padding:12px 16px;z-index:10}
+    .container{max-width:1000px;margin:0 auto;padding:18px}
+    h1{margin:0;font-size:clamp(22px,3.5vw,34px)}
+    .sub{color:var(--muted)}
+    .board{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+    .pill{font-size:13px;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12)}
+    .btn{background:linear-gradient(180deg,#111827,#0b1220);color:var(--text);border:1px solid rgba(255,255,255,.1);padding:10px 14px;border-radius:12px;cursor:pointer;transition:transform .06s ease,filter .2s ease}
+    .btn:hover{filter:brightness(1.1)} .btn:active{transform:translateY(1px)}
+    .grid{display:grid;gap:16px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:18px}
+    .q{font-size:clamp(16px,2.2vw,20px);line-height:1.35;margin-bottom:12px}
+    .opts{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:640px){.opts{grid-template-columns:1fr 1fr}}
+    .opt{background:var(--btn);border:1px solid rgba(255,255,255,.08);color:var(--text);padding:12px 14px;border-radius:12px;text-align:left;cursor:pointer;transition:transform .06s ease,background .2s}
+    .opt:hover{background:var(--btn-hover)}
+    .opt[disabled]{opacity:.9;cursor:not-allowed}
+    .opt.correct{outline:2px solid var(--right);box-shadow:0 0 0 3px rgba(22,163,74,.2) inset}
+    .opt.wrong{outline:2px solid var(--wrong);box-shadow:0 0 0 3px rgba(220,38,38,.2) inset}
+    .explain{color:var(--muted);font-size:14px;margin-top:8px;min-height:20px}
+    .summary{margin:18px 0 6px}
+    .footbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .progress{height:10px;width:100%;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,#06b6d4,#22d3ee);transition:width .35s ease}
+    footer{padding:24px 16px;color:var(--muted);text-align:center}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Bloque 3 – Tema 5 JAVA y .NET</h1>
+      <div class="board">
+        <div class="pill">Respondidas: <span id="answered">0</span> / <span id="total">0</span></div>
+        <div class="pill">Puntos: <span id="score">0</span></div>
+        <div class="pill">Correctas: <span id="corrects">0</span></div>
+        <button id="btnReset" class="btn">Reiniciar</button>
+      </div>
+      <div class="progress" style="margin-top:10px"><div id="bar" class="bar"></div></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="quiz" class="grid"></section>
+    <div class="summary">
+      <div class="pill">Resultado en vivo: <strong><span id="live">0</span>%</strong></div>
+    </div>
+  </main>
+
+  <footer>
+    Hecho con ❤️ en HTML + JS. Haz clic en cada opción para autocorregir. Usa “Reiniciar” para volver a empezar.
+  </footer>
+
+<script>
+
+
+const QUESTIONS = [
+  {
+    q: "¿Cuál de los siguientes NO es un beneficio directo de la implantación del Desarrollo de Software Basado en Componentes (DSBC)?",
+    opts: [
+      "Desarrollo más rápido y con menor coste.",
+      "Mayor número de errores debido al ensamblaje de piezas de terceros.",
+      "Menos errores por un riguroso control de calidad de los componentes.",
+      "Posibilidad de obtener ingresos adicionales por venta de componentes."
+    ],
+    a: 1,
+    exp: "La implantación del DSBC conduce a **menos errores** porque los componentes son sometidos a un riguroso control de calidad antes de su comercialización."
+  },
+  {
+    q: "En el contexto del Desarrollo Basado en Componentes, ¿a qué concepto se refiere la 'Composición tardía'?",
+    opts: [
+      "Al mecanismo de comunicación que avisa a los componentes de un cambio de estado.",
+      "A la capacidad de usar el componente en contextos distintos para los que fue diseñado.",
+      "A la composición que se realiza en un tiempo posterior al de la compilación del componente.",
+      "A la garantía de que un componente respete sus interfaces y contratos."
+    ],
+    a: 2,
+    exp: "La **composición tardía** es la composición que se realiza en un tiempo posterior al de la compilación del componente."
+  },
+  {
+    q: "Según Szyperski (1998), un componente de software es una unidad de composición de aplicaciones que se caracteriza por:",
+    opts: [
+      "Ser desarrollado, adquirido e incorporado al sistema solo por el fabricante original.",
+      "Poseer un conjunto de requisitos y no necesitar comunicarse con otros componentes.",
+      "Poder ser desarrollado, adquirido, incorporado y compuesto con otros componentes, de forma **independiente en tiempo y espacio**.",
+      "Ser una caja negra que no posee interfaces ni requisitos predefinidos."
+    ],
+    a: 2,
+    exp: "La definición formal establece que puede ser desarrollado, adquirido, incorporado y compuesto con otros componentes, de forma **independiente en tiempo y espacio**."
+  },
+  {
+    q: "¿Cuáles son los dos componentes esenciales que proporcionan todas las plataformas Java (SE, ME, EE)?",
+    opts: [
+      "Java Development Kit (JDK) y Compilador (Javac.exe).",
+      "Máquina Virtual de Java (VM) e Interfaz de programación de aplicaciones (API).",
+      "Servidor de Aplicaciones y Enterprise Java Beans (EJB).",
+      "Java Runtime Environment (JRE) y JavaServer Pages (JSP)."
+    ],
+    a: 1,
+    exp: "Todas las plataformas de Java proporcionan la **Máquina Virtual de Java (VM)** para la ejecución y la **Interfaz de programación de aplicaciones (API)** para la construcción de software."
+  },
+  {
+    q: "¿Cuál de estas plataformas Java está enfocada en proveer una API y una máquina virtual de tamaño reducido para aplicaciones en dispositivos pequeños como teléfonos móviles?",
+    opts: [
+      "Java SE (Standard Edition).",
+      "Java EE (Enterprise Edition).",
+      "Java FX.",
+      "Java ME (Micro Edition)."
+    ],
+    a: 3,
+    exp: "**Java ME (Micro Edition)** se utiliza para aplicaciones en dispositivos pequeños, proporcionando una API y una máquina virtual de tamaño reducido."
+  },
+  {
+    q: "¿Cuál fue el motivo principal por el que Java EE pasó a ser gestionado por la Fundación Eclipse y fue renombrado a Jakarta EE?",
+    opts: [
+      "Oracle no quería mantener la plataforma empresarial de Java.",
+      "La Fundación Eclipse compró Oracle en 2018.",
+      "Evitar la violación del copyright de la marca 'Java' poseída por Oracle y dirigir la plataforma a Open Source.",
+      "Dirigir el desarrollo hacia aplicaciones de escritorio y móviles."
+    ],
+    a: 2,
+    exp: "El cambio a **Jakarta EE** se produjo para dirigir el estándar a código abierto y evitar la violación de copyright de la marca 'Java', propiedad de Oracle."
+  },
+  {
+    q: "En Jakarta EE 9.0, el cambio más destacable para la compatibilidad es la migración del nombre de los paquetes de:",
+    opts: [
+      "`com.sun.*` a `jakarta.*`",
+      "`java.*` a `jakarta.*`",
+      "`javax.*` a `jakarta.*`",
+      "`org.eclipse.*` a `jakarta.*`"
+    ],
+    a: 2,
+    exp: "En Jakarta EE 9.0, los paquetes con la nomenclatura anterior **`javax.*`** pasaron a utilizar la nueva denominación **`jakarta.*`**."
+  },
+  {
+    q: "¿Qué especificación de Jakarta EE está enfocada al desarrollo de microservicios basados en Java EE, aportando especificaciones ligeras y APIs para la resiliencia y escalabilidad?",
+    opts: [
+      "Jakarta Persistence.",
+      "Jakarta Connectors.",
+      "Jakarta Batch.",
+      "Microprofile."
+    ],
+    a: 3,
+    exp: "La especificación **Microprofile** está específicamente enfocada al desarrollo de microservicios, aportando APIs y especificaciones para aspectos como la resiliencia y escalabilidad."
+  },
+  {
+    q: "Dentro de las especificaciones de Jakarta EE, ¿qué es el Kit de Compatibilidad Tecnológica (TCK)?",
+    opts: [
+      "El documento que define y describe la especificación y el API.",
+      "La implementación que pasa con éxito las pruebas de validación.",
+      "Una herramienta que se utiliza para probar el código implementado según las API y el documento de especificaciones.",
+      "El lenguaje de especificación de trabajos por lotes basado en XML."
+    ],
+    a: 2,
+    exp: "El **TCK (Kit de Compatibilidad Tecnológica)** se utiliza para probar el código implementado según las API y el documento de especificaciones."
+  },
+  {
+    q: "¿En qué se convierte la especificación JPA (Java Persistence API), publicada por última vez con la numeración 2.2, dentro de Jakarta EE 9.0?",
+    opts: [
+      "Jakarta Persistance API 2.2.",
+      "Jakarta Persistence 3.0.",
+      "Jakarta JDO 3.0.",
+      "Jakarta Enterprise Java Beans 3.0."
+    ],
+    a: 1,
+    exp: "La especificación JPA aumenta su número de versión principal, convirtiéndose en **Jakarta Persistence 3.0** dentro de Jakarta EE 9.0."
+  },
+  {
+    q: "¿Cuál de los siguientes NO se considera un tipo de componente en una aplicación Java EE?",
+    opts: [
+      "Componentes de cliente (ej: applets).",
+      "Componentes de negocio (ej: EJB).",
+      "Componentes de base de datos (ej: SQL Beans).",
+      "Componentes Web (ej: Servlets, JSP)."
+    ],
+    a: 2,
+    exp: "Los tres tipos de componentes en una aplicación Java EE son de cliente, web y de negocio (EJB)."
+  },
+  {
+    q: "¿Qué es un Contenedor en el contexto de la arquitectura Java EE/Jakarta EE?",
+    opts: [
+      "Un programa que ejecuta las aplicaciones de lenguaje Java en el cliente.",
+      "Un componente de negocio que encapsula lógica empresarial compleja.",
+      "El entorno en el que se ejecutan los componentes, actuando como la interfaz entre el componente y la plataforma de bajo nivel que lo soporta.",
+      "La colección de clases e interfaces que forman el API de la plataforma."
+    ],
+    a: 2,
+    exp: "El **contenedor** es el entorno en el que se ejecutan los componentes, sirviendo de interfaz entre el componente y la plataforma de bajo nivel que lo soporta."
+  },
+  {
+    q: "¿Qué servicio de la arquitectura Java EE/Jakarta EE tiene la función de guardar las evidencias de las acciones de los usuarios para que no puedan negar haber realizado una transacción contra el servidor?",
+    opts: [
+      "Autenticación.",
+      "Autorización.",
+      "Confidencialidad.",
+      "No Repudio."
+    ],
+    a: 3,
+    exp: "El **No Repudio** consiste en guardar las evidencias de las acciones para que el usuario no pueda negar la realización de una transacción."
+  },
+  {
+    q: "¿Cuál es el paquete de la Librería Estándar de Java (Java Standard Library) que se implementa por defecto sin necesidad de importación y contiene clases esenciales como 'Object' y 'String'?",
+    opts: [
+      "`java.util`",
+      "`java.lang`",
+      "`java.io`",
+      "`java.net`"
+    ],
+    a: 1,
+    exp: "El paquete **`java.lang`** contiene clases esenciales y se implementa por defecto sin necesidad de importación en cualquier programa Java."
+  },
+  {
+    q: "En Java, la excepción NullPointerException se produce cuando:",
+    opts: [
+      "Se intenta acceder a un array con un índice fuera de su rango.",
+      "Se intenta acceder a cualquier atributo o método de un objeto con valor 'null' (nulo).",
+      "Se intenta realizar una división por cero.",
+      "Una excepción producida en tiempo de ejecución de la que no se puede heredar."
+    ],
+    a: 1,
+    exp: "La **NullPointerException** se produce específicamente al intentar acceder a un método o atributo de un objeto que tiene un valor nulo."
+  },
+  {
+    q: "¿Cuál es la composición correcta del Java Runtime Environment (JRE)?",
+    opts: [
+      "JRE = Compilador (Javac.exe) + Intérprete (Java.exe) + Bibliotecas.",
+      "JRE = JDK + Máquina Virtual.",
+      "JRE = JVM + bibliotecas Java + componentes.",
+      "JRE = JDK + Javac.exe + Bibliotecas."
+    ],
+    a: 2,
+    exp: "El **JRE (Java Runtime Environment)** está compuesto por la **JVM (Máquina Virtual de Java)**, bibliotecas Java y componentes necesarios para la ejecución."
+  },
+  {
+    q: "¿Cuál de los siguientes elementos forma parte del Java Development Kit (JDK), que es necesario para desarrollar programas en Java?",
+    opts: [
+      "El Intérprete de Java (`java.exe`).",
+      "El Generador de vistas (`Appletviewer.exe`).",
+      "El Compilador (`Javac.exe`).",
+      "Todas las opciones anteriores son correctas."
+    ],
+    a: 3,
+    exp: "El **JDK** incluye el JRE, el compilador, el intérprete y el generador de vistas, entre otras herramientas."
+  },
+  {
+    q: "¿A qué característica principal del lenguaje Java hace referencia la frase 'write once, run anywhere'?",
+    opts: [
+      "Simplicidad.",
+      "Portabilidad / Independencia de la plataforma.",
+      "Programación Multihilo.",
+      "Recolección de Basura."
+    ],
+    a: 1,
+    exp: "El objetivo del lenguaje es la **independencia de la plataforma** o **portabilidad**, lo que se resume en la frase 'escribir una vez, ejecutar en cualquier sitio'."
+  },
+  {
+    q: "¿Cuál de los siguientes es un tipo de dato primitivo en Java, utilizado para almacenar números enteros?",
+    opts: [
+      "String.",
+      "Array.",
+      "int.",
+      "Object."
+    ],
+    a: 2,
+    exp: "El tipo **`int`** es uno de los tipos de datos primitivos en Java para el almacenamiento de números enteros."
+  },
+  {
+    q: "Los tipos de datos no primitivos en Java son considerados objetos y se denominan también:",
+    opts: [
+      "Datos estáticos.",
+      "Datos locales.",
+      "Datos de referencia.",
+      "Datos inmutables."
+    ],
+    a: 2,
+    exp: "Los tipos no primitivos se denominan **datos de referencia** porque almacenan la dirección de memoria donde se almacena el dato (el objeto)."
+  },
+  {
+    q: "En Java, ¿qué palabra reservada se utiliza para definir una variable cuyo valor no puede ser modificado después de su inicialización (constante)?",
+    opts: [
+      "`abstract`",
+      "`final`",
+      "`const`",
+      "`static`"
+    ],
+    a: 1,
+    exp: "La palabra reservada **`final`** se utiliza para declarar constantes, así como para métodos que no pueden ser sobreescritos o clases que no pueden ser heredadas."
+  },
+  {
+    q: "¿Qué tipo de comentario en Java facilita la generación de documentación en formato HTML a través de la herramienta Javadoc?",
+    opts: [
+      "Comentario de una línea (`// comentario`).",
+      "Comentario de bloque (`/* comentario */`).",
+      "Comentario de documentación (`/** comentario */`).",
+      "Comentario de depuración (`# comentario`)."
+    ],
+    a: 2,
+    exp: "El **comentario de documentación** o *doc comment* (`/** comentario */`), facilita la generación de documentación en formato HTML mediante **Javadoc**."
+  },
+  {
+    q: "¿Cuál es la función principal del Recolector de Basura (Garbage Collector) en Java?",
+    opts: [
+      "Compilar el código fuente a bytecode.",
+      "Gestionar y liberar automáticamente la memoria dinámica ocupada por objetos que ya no pueden ser accedidos por el código de la aplicación.",
+      "Prevenir los errores de seguridad a nivel de hilos de ejecución.",
+      "Traducir el bytecode a código máquina específico de la plataforma."
+    ],
+    a: 1,
+    exp: "El **Recolector de Basura** se activa para liberar la memoria dinámica de objetos que ya no son referenciados por la aplicación, previniendo fugas de memoria."
+  },
+  {
+    q: "¿Cuál de las siguientes reglas es INCORRECTA para la construcción de un identificador en el lenguaje de programación Java?",
+    opts: [
+      "Pueden contener caracteres alfanuméricos, `$` y `_`.",
+      "Pueden comenzar con un dígito (0-9).",
+      "Se distingue entre mayúsculas y minúsculas.",
+      "No pueden emplearse espacios en blanco."
+    ],
+    a: 1,
+    exp: "Los identificadores en Java **no pueden comenzar con dígitos** (0-9), deben empezar con una letra o un guión bajo (`_`)."
+  },
+  {
+    q: "En Java, ¿cuál es el operador aritmético que calcula el resto (módulo) de la división entre dos operandos?",
+    opts: [
+      "`/` (división)",
+      "`*` (multiplicación)",
+      "`%` (módulo)",
+      "`++` (incremento)"
+    ],
+    a: 2,
+    exp: "El operador **`%`** se utiliza en Java para obtener el resto de la división (operación módulo)."
+  },
+  {
+    q: "¿Cuál de los siguientes operadores lógicos o booleanos en Java se conoce como 'AND lógico condicional' o 'cortocircuito'?",
+    opts: [
+      "`&`",
+      "`|`",
+      "`&&`",
+      "`!`"
+    ],
+    a: 2,
+    exp: "El operador **`&&`** es el AND lógico condicional, lo que significa que la segunda parte de la expresión solo se evalúa si la primera es verdadera (cortocircuito)."
+  },
+  {
+    q: "Respecto a las clases abstractas en Java, ¿cuál de las siguientes afirmaciones es la correcta?",
+    opts: [
+      "Una clase que hereda de una clase abstracta puede ser no abstracta.",
+      "Una clase abstracta puede ser instanciada.",
+      "Una clase abstracta no puede ser instanciada, pero sí pueden crearse subclases concretas que hereden de ella e implementen sus métodos abstractos.",
+      "No pueden contener ningún método concreto (no abstracto)."
+    ],
+    a: 2,
+    exp: "Las **clases abstractas** no se pueden instanciar directamente, pero son la base para crear subclases concretas que implementan sus métodos abstractos."
+  },
+  {
+    q: "La Java Persistence API (JPA) es el estándar para el mapeo de objetos Java a una base de datos relacional. ¿Cuál de las siguientes NO es una ventaja de JPA?",
+    opts: [
+      "Permite crear la tabla del modelo de datos correspondiente a una clase.",
+      "Total dependencia de la base de datos subyacente.",
+      "Independencia de la base de datos.",
+      "Persistencia no solo a base de datos, también objetos, ficheros de texto plano, XML, etcétera."
+    ],
+    a: 1,
+    exp: "JPA ofrece **independencia de la base de datos**, no su dependencia, lo que permite cambiar el motor de base de datos sin alterar gran parte del código."
+  },
+  {
+    q: "Hibernate es una herramienta de Mapeo Objeto-Relacional (ORM) para Java. ¿Cuál es su equivalente en la Plataforma .NET?",
+    opts: [
+      "ADO.NET.",
+      "NHibernate.",
+      "LINQ.",
+      "ASP.NET."
+    ],
+    a: 1,
+    exp: "**NHibernate** es el análogo directo de Hibernate para la plataforma .NET, cumpliendo la misma función de mapeo objeto-relacional."
+  },
+  {
+    q: "¿Qué perfil de la Plataforma Jakarta EE está diseñado para alojar aplicaciones web con un tiempo de ejecución más pequeño que la plataforma completa?",
+    opts: [
+      "Plataforma Jakarta EE.",
+      "Perfil Principal de Jakarta EE.",
+      "Perfil Web de Jakarta EE.",
+      "Jakarta FX."
+    ],
+    a: 2,
+    exp: "El **Perfil Web de Jakarta EE** es un subconjunto de la plataforma completa y está destinado a alojar aplicaciones web con un menor consumo de recursos."
+  },
+  {
+    q: "La especificación de Jakarta EE que provee un API para desarrollar servicios web siguiendo el patrón REST es:",
+    opts: [
+      "Jakarta SOAP con archivos adjuntos.",
+      "Jakarta Enterprise Java Beans.",
+      "Jakarta RESTFul Web Services.",
+      "Jakarta Servlets."
+    ],
+    a: 2,
+    exp: "**Jakarta RESTFul Web Services** proporciona la API para desarrollar servicios web de tipo REST."
+  },
+  {
+    q: "¿Qué es Jakarta Server Faces (JSF)?",
+    opts: [
+      "Un API para analizar y generar documentos JSON.",
+      "Una API del lado del servidor para manejar solicitudes y respuestas HTTP.",
+      "Un marco MVC para crear interfaces de usuario basadas en componentes para aplicaciones web.",
+      "Un lenguaje de especificación de trabajos por lotes basado en XML."
+    ],
+    a: 2,
+    exp: "**Jakarta Server Faces (JSF)** es un marco web que simplifica la construcción de interfaces de usuario para aplicaciones basadas en servidor mediante componentes reutilizables."
+  },
+  {
+    q: "¿Qué especificación de Jakarta EE define un API del lado del servidor específicamente para manejar solicitudes y respuestas HTTP?",
+    opts: [
+      "Jakarta Enterprise Java Beans.",
+      "Jakarta Pages Server.",
+      "Jakarta Servlet.",
+      "Jakarta Connectors."
+    ],
+    a: 2,
+    exp: "**Jakarta Servlet** define una API del lado del servidor que se encarga del manejo de solicitudes y respuestas HTTP."
+  },
+  {
+    q: "¿Cuál es la finalidad principal de la especificación Jakarta Connectors?",
+    opts: [
+      "La inyección declarativa de dependencia.",
+      "La arquitectura para conectar aplicaciones a sistemas de información empresarial (EIS).",
+      "La estandarización del patrón modelo-vista-controlador basado en acciones.",
+      "El soporte de depuración de lenguajes distintos de Java."
+    ],
+    a: 1,
+    exp: "**Jakarta Connectors** se enfoca en la arquitectura para la integración de aplicaciones con sistemas empresariales externos (EIS), como bases de datos y sistemas de mensajería."
+  },
+  {
+    q: "¿Cuál de los siguientes es un ejemplo de un Patrón de Diseño Creacional para definir clases?",
+    opts: [
+      "Factory Method.",
+      "Adapter.",
+      "Iterator.",
+      "Observer."
+    ],
+    a: 0,
+    exp: "El patrón **Factory Method** es un ejemplo clásico de un Patrón de Diseño Creacional."
+  },
+  {
+    q: "En Java, la expresión `(condición) ? valor1 : valor2` corresponde al:",
+    opts: [
+      "Operador de Desplazamiento de Bits.",
+      "Operador Ternario o Condicional.",
+      "Operador de Asignación Combinado.",
+      "Operador de Relación."
+    ],
+    a: 1,
+    exp: "Es el **operador condicional o ternario**, el único con tres operandos, que evalúa una condición para devolver uno de dos posibles valores."
+  },
+  {
+    q: "¿Cuál de los siguientes servicios de Java EE/Jakarta EE permite la mensajería a través de servicios asincrónicos confiables y poco acoplados?",
+    opts: [
+      "Servicio de nombres.",
+      "Servicio de transacciones.",
+      "Jakarta Mensajería.",
+      "Servicio de configuración y administración."
+    ],
+    a: 2,
+    exp: "La especificación **Jakarta Mensajería** (`Jakarta Messaging`) se enfoca en la mensajería a través de servicios asincrónicos confiables y poco acoplados."
+  },
+  {
+    q: "Si un programador desea crear sus propias excepciones personalizadas en Java, ¿de cuál de las siguientes clases es más probable que deba heredar su nueva clase de excepción?",
+    opts: [
+      "`Exception`",
+      "`Throwable`",
+      "`RunTimeException`",
+      "`ArrayIndexOutOfBoundsException`"
+    ],
+    a: 2,
+    exp: "Si se quiere crear una **excepción no controlada** (`unchecked exception`), se debe heredar de **`RunTimeException`**."
+  },
+  {
+    q: "¿Cuál es la función o método principal a partir del cual comienza la ejecución de un programa en Java?",
+    opts: [
+      "`public class Main`",
+      "`public void init()`",
+      "`public static void main(String[] args)`",
+      "`public static void run()`"
+    ],
+    a: 2,
+    exp: "El método principal que inicia la ejecución de cualquier aplicación de consola o *stand-alone* en Java es **`public static void main(String[] args)`**."
+  },
+  {
+    q: "¿Cuál de las siguientes afirmaciones sobre las interfaces en Java es correcta?",
+    opts: [
+      "Las interfaces pueden ser instanciadas.",
+      "Una clase puede implementar solo una interfaz.",
+      "Una clase puede implementar varias interfaces.",
+      "Las interfaces pueden contener métodos con implementación (cuerpo)."
+    ],
+    a: 2,
+    exp: "En Java, una clase puede implementar **múltiples interfaces**, lo que permite lograr herencia múltiple de comportamiento."
+  },
+  {
+    q: "¿Qué operador de bit a bit en Java realiza la operación de OR exclusivo (XOR)?",
+    opts: [
+      "`&`",
+      "`|`",
+      "`^`",
+      "`~`"
+    ],
+    a: 2,
+    exp: "El operador **`^`** se utiliza para realizar la operación de bit a bit de OR exclusivo (XOR)."
+  },
+  {
+    q: "En Java, si el valor inicial de una variable entera `i` es 5, ¿cuál será su valor después de ejecutar la expresión `i++` (operador aritmético incremental)?",
+    opts: [
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    a: 2,
+    exp: "El operador de post-incremento (`i++`) suma 1 al valor de la variable. Por lo tanto, el nuevo valor de `i` es **6**."
+  },
+  {
+    q: "¿Cuál es el estándar que permite a las transacciones de Jakarta (Java) ser consistentes y manejables, tal como se menciona en el texto?",
+    opts: [
+      "JTA (Java Transaction API).",
+      "JMS (Java Messaging Service).",
+      "X/Open XA-spec.",
+      "JNDI (Java Naming and Directory Interface)."
+    ],
+    a: 2,
+    exp: "La especificación Jakarta Transacciones permite manejar transacciones consistentes con el estándar **X/Open XA-spec**."
+  },
+  {
+    q: "¿Qué documento formal, utilizado en el Proceso de la Comunidad Java (JCP), describe las especificaciones y tecnologías propuestas para ser añadidas a la plataforma Java?",
+    opts: [
+      "Java Service Pack (JSP).",
+      "Java Technology Compatibility Kit (JTCK).",
+      "Java Specification Request (JSR).",
+      "Java Development Kit (JDK)."
+    ],
+    a: 2,
+    exp: "Las **Java Specification Request (JSR)** son los documentos formales utilizados por el JCP para describir nuevas especificaciones o tecnologías propuestas."
+  },
+  {
+    q: "¿Cuál de los siguientes aspectos se aborda específicamente mediante las especificaciones ligeras y APIs que aporta Microprofile en arquitecturas de microservicios?",
+    opts: [
+      "Acceso a bases de datos relacionales.",
+      "Resiliencia, escalabilidad y gestión de la configuración.",
+      "Desarrollo de interfaces gráficas de usuario (GUI).",
+      "Análisis de XML y seguridad a nivel de datos primitivos."
+    ],
+    a: 1,
+    exp: "Microprofile se concibió para ocuparse de necesidades específicas de las arquitecturas de microservicios, como la **resiliencia, la escalabilidad y la gestión de la configuración**."
+  },
+  {
+    q: "La característica de Reemplazabilidad (inclusión) en el Desarrollo Basado en Componentes se refiere a:",
+    opts: [
+      "La capacidad de un componente para conocer su estado e informar sobre el mismo.",
+      "La composición que se realiza en un tiempo posterior al de la compilación.",
+      "La capacidad de un componente de reemplazar a otro en una aplicación, sin romper los contratos con sus clientes.",
+      "La especificación que establece las condiciones de uso e implementación de un componente."
+    ],
+    a: 2,
+    exp: "La **reemplazabilidad** es la capacidad de un componente para ser sustituido por otro en una aplicación sin afectar la compatibilidad con sus clientes."
+  },
+  {
+    q: "¿Cuál de las siguientes especificaciones fue abandonada en el estándar de Jakarta EE 9.0?",
+    opts: [
+      "Jakarta Persistence.",
+      "XML Registries.",
+      "Jakarta RESTFul Web Services.",
+      "Jakarta Servlets."
+    ],
+    a: 1,
+    exp: "**XML Registries** fue una de las especificaciones, junto con XML RPC y Deployment, que abandonaron el estándar en Jakarta EE 9.0."
+  },
+  {
+    q: "En Java, ¿qué método de la clase String se recomienda utilizar para comparar el contenido de dos cadenas de caracteres?",
+    opts: [
+      "Operador de igualdad (`==`).",
+      "Método `compare()` de la clase `Object`.",
+      "Método `equals()` de la clase `String`.",
+      "Operador de concatenación (`+`)."
+    ],
+    a: 2,
+    exp: "Se debe usar el método **`equals()`** para comparar el contenido de las cadenas, ya que el operador `==` compara las referencias de los objetos."
+  },
+  {
+    q: "La estructura básica de un programa en Java contiene, como mínimo, la definición de una:",
+    opts: [
+      "Función.",
+      "Método.",
+      "Interfaz.",
+      "Clase."
+    ],
+    a: 3,
+    exp: "Debido a que Java es un lenguaje totalmente orientado a objetos, un programa debe estar contenido dentro de la definición de una **clase**."
+  },
+  {
+    q: "¿Qué carácter se puede utilizar en Java para separar bloques de números al inicializar variables enteras y reales, facilitando la lectura del código, sin que el compilador lo tenga en cuenta?",
+    opts: [
+      "`:` (dos puntos)",
+      "`_` (guión bajo)",
+      "`,` (coma)",
+      "`.` (punto)"
+    ],
+    a: 1,
+    exp: "El carácter **guión bajo (`_`)** puede utilizarse como separador en literales numéricos para mejorar la legibilidad del código."
+  },
+  {
+    q: "¿Qué significa la sigla LINQ en el contexto de la plataforma Microsoft .NET?",
+    opts: [
+      "Language-Independent Native Query.",
+      "Library-Integrated Network Quality.",
+      "Language-Integrated Query.",
+      "Low-Level Interoperability Naming Query."
+    ],
+    a: 2,
+    exp: "**LINQ**, que se pronuncia 'link', significa **Language-Integrated Query** y añade capacidades de consulta de datos nativas a los lenguajes .NET."
+  },
+  {
+    q: "¿Qué componente de la plataforma .NET es responsable de la administración de memoria, la recolección de basura, el tratamiento de excepciones y el soporte multihilo?",
+    opts: [
+      "BCL - Base Class Library.",
+      "CLS - Common Language Specification.",
+      "CLR - Common Language Runtime.",
+      "ADO.NET."
+    ],
+    a: 2,
+    exp: "El **CLR (Common Language Runtime)** es el componente esencial de ejecución que gestiona la administración de memoria, la recolección de basura y el tratamiento de excepciones."
+  },
+  {
+    q: "¿Cuál es el componente de la plataforma .NET que proporciona los tipos y la funcionalidad esenciales para todos los lenguajes .NET, la cual se considera el núcleo del framework?",
+    opts: [
+      "CLS.",
+      "CLR.",
+      "JIT Compiler.",
+      "BCL (Base Class Library)."
+    ],
+    a: 3,
+    exp: "La **BCL (Base Class Library)** es el núcleo del framework que proporciona la funcionalidad y los tipos básicos para todos los lenguajes .NET."
+  },
+  {
+    q: "¿Cuál es la implementación original de .NET que está optimizada para crear aplicaciones web, servidores y de escritorio de Windows, y solo funciona en sistemas Windows?",
+    opts: [
+      ".NET Core",
+      ".NET Framework",
+      ".NET Standard",
+      "Mono"
+    ],
+    a: 1,
+    exp: "**.NET Framework** es la implementación original y está optimizada para el desarrollo de aplicaciones para Windows."
+  },
+  {
+    q: "¿Qué característica fundamental diferencia a .NET Core (posteriormente solo .NET) de .NET Framework?",
+    opts: [
+      "Su enfoque exclusivo en bases de datos.",
+      "Su soporte únicamente para Windows.",
+      "Su carácter multiplataforma, modular y de código abierto.",
+      "La eliminación del Common Language Runtime (CLR)."
+    ],
+    a: 2,
+    exp: "**.NET Core** (y su sucesor .NET) se distingue por ser una implementación **multiplataforma, de código abierto y modular**, a diferencia de la implementación original de .NET Framework."
+  },
+  {
+    q: "¿Qué capa de abstracción de software distribuida se sitúa entre las capas de aplicaciones y las capas inferiores (sistema operativo y red) en la plataforma .NET?",
+    opts: [
+      "API.",
+      "Middleware.",
+      "Base Class Library.",
+      "Assembly."
+    ],
+    a: 1,
+    exp: "El **Middleware** actúa como una capa de abstracción de software que simplifica la interacción y comunicación entre aplicaciones, sistemas operativos y redes."
+  },
+  {
+    q: "¿Cuál de los siguientes lenguajes de programación se considera uno de los principales utilizados en la plataforma .NET y se describe como simple, orientado a objetos y basado en C?",
+    opts: [
+      "Visual Basic.",
+      "Java.",
+      "F#.",
+      "C#."
+    ],
+    a: 3,
+    exp: "**C#** es uno de los principales lenguajes de .NET y se describe como simple, orientado a objetos y basado en C."
+  },
+  {
+    q: "Dentro de .NET Framework, ¿qué componente está diseñado para el acceso a bases de datos?",
+    opts: [
+      "ASP.NET.",
+      "WinForms.",
+      "ADO.NET.",
+      "BCL."
+    ],
+    a: 2,
+    exp: "**ADO.NET** es el componente de .NET Framework que proporciona características avanzadas para el acceso a bases de datos."
+  },
+  {
+    q: "En la arquitectura de ADO.NET, ¿qué objeto representa una sola fila en la tabla de datos y permite leer y actualizar los valores en esa fila?",
+    opts: [
+      "`DataSet`",
+      "`DataColumn`",
+      "`DataView`",
+      "`DataRow`"
+    ],
+    a: 3,
+    exp: "Un objeto **`DataRow`** representa una única fila de la tabla y permite la manipulación de los valores en esa fila."
+  },
+  {
+    q: "¿Qué componente de .NET asegura que el código escrito en un lenguaje (ej. C#) pueda interactuar sin problemas con el código escrito en otro lenguaje (ej. F#) dentro de la plataforma?",
+    opts: [
+      "Base Class Library (BCL).",
+      "Common Language Specification (CLS).",
+      "Just-In-Time Compiler (JIT).",
+      "Common Language Runtime (CLR)."
+    ],
+    a: 1,
+    exp: "La **CLS (Common Language Specification)** define las reglas de lenguaje para garantizar la interoperabilidad entre los diferentes lenguajes de la plataforma .NET."
+  },
+  {
+    q: "¿Qué carácter especial se encuentra entre los tokens de C y se utiliza como separador?",
+    opts: [
+      "`*` (asterisco)",
+      "`:` (dos puntos)",
+      "`;` (punto y coma)",
+      "`#` (almohadilla)"
+    ],
+    a: 2,
+    exp: "El **punto y coma (`;`)** se utiliza en C como separador para finalizar sentencias."
+  },
+  {
+    q: "¿De qué elemento está compuesto, opcionalmente, un programa en C además de la función `main()`?",
+    opts: [
+      "Clases.",
+      "Métodos.",
+      "Otras funciones.",
+      "Interfaces."
+    ],
+    a: 2,
+    exp: "Un programa en C estructurado se compone de la función `main` (principal) y, opcionalmente, de **otras funciones**."
+  },
+  {
+    q: "En C++, ¿qué instrucción se utiliza para indicar que se usarán los elementos de la biblioteca estándar, los cuales están declarados dentro de un espacio de nombres llamado `std`?",
+    opts: [
+      "`import std::all;`",
+      "`#include <iostream>`",
+      "`using namespace std`",
+      "`public class std {}`"
+    ],
+    a: 2,
+    exp: "La instrucción **`using namespace std`** permite usar los elementos del espacio de nombres de la biblioteca estándar (`std`) sin prefijo."
+  },
+  {
+    q: "¿Cuál es el mecanismo de C++ que permite manejar los errores producidos durante la ejecución de un programa?",
+    opts: [
+      "El Recolector de Basura.",
+      "La sentencia nula.",
+      "La Sobrecarga de Operadores.",
+      "El mecanismo de Excepciones."
+    ],
+    a: 3,
+    exp: "C++ utiliza el **mecanismo de excepciones** para el manejo de errores producidos en tiempo de ejecución."
+  },
+  {
+    q: "¿Cómo se representa la sentencia nula en C++?",
+    opts: [
+      "Solo un punto y coma (`;`).",
+      "La palabra reservada `null`.",
+      "La palabra reservada `void`.",
+      "Un comentario vacío (`//`)."
+    ],
+    a: 0,
+    exp: "En C++, la **sentencia nula** se representa simplemente con un **punto y coma (`;`)**."
+  },
+  {
+    q: "¿Cuál es la unidad básica de despliegue, versionado y seguridad de una aplicación .NET, que contiene tanto código compilado como metadatos?",
+    opts: [
+      "El Componente Assembly.",
+      "El Common Language Runtime (CLR).",
+      "La Base Class Library (BCL).",
+      "El WinForms."
+    ],
+    a: 0,
+    exp: "El **Assembly** es el componente que actúa como unidad fundamental de despliegue, versionado y seguridad en .NET."
+  },
+  {
+    q: "¿Qué implementación de .NET está enfocada en la creación de aplicaciones que pueden ejecutarse en un amplio rango de dispositivos Windows, desde PC de escritorio hasta Xbox y HoloLens?",
+    opts: [
+      ".NET Framework",
+      ".NET Core",
+      "Mono",
+      "UWP (Universal Windows Platform)"
+    ],
+    a: 3,
+    exp: "**UWP (Universal Windows Platform)** es la implementación diseñada para unificar el desarrollo en el ecosistema de dispositivos Windows."
+  },
+  {
+    q: "¿Qué especificación de Jakarta EE es un marco de enlace para convertir POJO (Plain Old Java Objects) a/desde documentos JSON?",
+    opts: [
+      "Jakarta JSON Processing.",
+      "Jakarta JSON Binding.",
+      "Jakarta Servlets.",
+      "Jakarta Connectors."
+    ],
+    a: 1,
+    exp: "**Jakarta JSON Binding** es el marco que facilita el mapeo (binding) automático entre objetos Java (POJO) y el formato JSON."
+  },
+  {
+    q: "En el Desarrollo Basado en Componentes, ¿cuál de los siguientes tipos de polimorfismo se resuelve en tiempo de ejecución?",
+    opts: [
+      "Polimorfismo de Inclusión (Herencia).",
+      "Polimorfismo de Sobrecarga (Overloading).",
+      "Polimorfismo Paramétrico (Generics).",
+      "Polimorfismo de Coerción (Conversión de tipos)."
+    ],
+    a: 0,
+    exp: "El **Polimorfismo de Inclusión**, mediante la herencia y la sobreescritura de métodos, se resuelve en tiempo de ejecución (enlace dinámico)."
+  },
+  {
+    q: "¿Cuál de las siguientes afirmaciones sobre la inyección de dependencias (DI) es INCORRECTA?",
+    opts: [
+      "La DI ayuda a reducir el acoplamiento entre clases.",
+      "Un contenedor DI (como CDI en Jakarta EE) es responsable de instanciar y configurar las dependencias.",
+      "La inyección de dependencias solo se puede realizar a través de constructores.",
+      "Facilita la prueba unitaria de los componentes."
+    ],
+    a: 2,
+    exp: "La inyección de dependencias se puede realizar mediante **constructores, setters o propiedades/campos** (field injection)."
+  },
+  {
+    q: "En una arquitectura de tres capas, ¿cuál de las capas se encarga de la lógica de negocio y la manipulación de datos?",
+    opts: [
+      "Capa de Presentación.",
+      "Capa de Acceso a Datos (Persistencia).",
+      "Capa de Negocio (Lógica).",
+      "Capa de Infraestructura."
+    ],
+    a: 2,
+    exp: "La **Capa de Negocio** es la que contiene la lógica empresarial y las reglas de manipulación de los datos."
+  },
+  {
+    q: "¿Cuál es el beneficio principal de la capa de persistencia en una arquitectura de tres capas?",
+    opts: [
+      "Permitir la interacción directa con el usuario final.",
+      "Aislar la lógica de negocio de los detalles de almacenamiento (bases de datos).",
+      "Manejar la navegación de la aplicación web.",
+      "Proporcionar la inyección de dependencias."
+    ],
+    a: 1,
+    exp: "El objetivo principal es **aislar la capa de negocio** de los detalles específicos de la base de datos (SQL, motor, etc.)."
+  },
+  {
+    q: "¿Qué capa de la arquitectura de tres capas interactúa directamente con el usuario?",
+    opts: [
+      "Capa de Dominio.",
+      "Capa de Persistencia.",
+      "Capa de Negocio.",
+      "Capa de Presentación."
+    ],
+    a: 3,
+    exp: "La **Capa de Presentación** se encarga de la interfaz de usuario y la interacción directa con el usuario final."
+  },
+  {
+    q: "¿Cuál de los siguientes NO es un ejemplo de un Patrón de Diseño Estructural?",
+    opts: [
+      "Adapter.",
+      "Facade.",
+      "Builder.",
+      "Proxy."
+    ],
+    a: 2,
+    exp: "**Builder** es un patrón de diseño **Creacional**."
+  },
+  {
+    q: "¿Qué principio de la programación orientada a objetos establece que una clase debe ser abierta para su extensión, pero cerrada para su modificación?",
+    opts: [
+      "Principio de Abstracción.",
+      "Principio de Responsabilidad Única (SRP).",
+      "Principio Abierto/Cerrado (OCP).",
+      "Principio de Inversión de Dependencias (DIP)."
+    ],
+    a: 2,
+    exp: "El **Principio Abierto/Cerrado (OCP)** es el que dicta que las entidades de software deben estar abiertas para la extensión, pero cerradas para la modificación."
+  },
+  {
+    q: "¿Qué es la cohesión en el desarrollo de software?",
+    opts: [
+      "El grado de interdependencia entre dos módulos diferentes.",
+      "El grado en que los elementos dentro de un módulo pertenecen juntos o están fuertemente relacionados.",
+      "La capacidad de un componente para ser reemplazado por otro.",
+      "La abstracción del almacenamiento de datos."
+    ],
+    a: 1,
+    exp: "La **cohesión** mide qué tan relacionados están los elementos internos de un módulo (o clase); se busca una **cohesión alta**."
+  },
+  {
+    q: "¿Qué es el acoplamiento en el desarrollo de software?",
+    opts: [
+      "El grado de interdependencia entre diferentes módulos de software.",
+      "El grado en que las responsabilidades de una clase son coherentes.",
+      "La encapsulación de la lógica de negocio.",
+      "La herencia de una clase a otra."
+    ],
+    a: 0,
+    exp: "El **acoplamiento** mide la interdependencia entre módulos; se busca un **acoplamiento bajo**."
+  },
+  {
+    q: "¿Cuál es el valor óptimo de acoplamiento y cohesión en un diseño de software?",
+    opts: [
+      "Alto acoplamiento y alta cohesión.",
+      "Bajo acoplamiento y baja cohesión.",
+      "Bajo acoplamiento y alta cohesión.",
+      "Alto acoplamiento y baja cohesión."
+    ],
+    a: 2,
+    exp: "Un buen diseño de software busca **bajo acoplamiento** (independencia entre módulos) y **alta cohesión** (relación interna fuerte en el módulo)."
+  },
+  {
+    q: "En Java, ¿qué palabra clave se utiliza para acceder a los miembros estáticos de una clase sin crear una instancia de ella?",
+    opts: [
+      "`final`",
+      "`public`",
+      "`static`",
+      "`private`"
+    ],
+    a: 2,
+    exp: "La palabra clave **`static`** se utiliza para declarar miembros que pertenecen a la clase misma, no a una instancia específica."
+  },
+  {
+    q: "¿Qué representa la palabra clave `this` dentro de un método de instancia en Java?",
+    opts: [
+      "Una referencia a la clase padre (superclase).",
+      "Una referencia a la clase actual (en contexto estático).",
+      "Una referencia al objeto de la clase en el que se está invocando el método.",
+      "La referencia nula."
+    ],
+    a: 2,
+    exp: "**`this`** es una referencia al objeto actual y se utiliza para acceder a los miembros del objeto dentro de un método de instancia."
+  },
+  {
+    q: "¿Qué es la sobrecarga de métodos (*method overloading*) en Java?",
+    opts: [
+      "Definir un método en una subclase con el mismo nombre y firma que un método de la superclase.",
+      "Definir varios métodos en la misma clase con el mismo nombre, pero con diferente número o tipo de argumentos.",
+      "Definir un método que solo acepta argumentos de tipos primitivos.",
+      "Definir un método sin cuerpo (abstracto)."
+    ],
+    a: 1,
+    exp: "La **Sobrecarga de Métodos** permite que una clase tenga múltiples métodos con el mismo nombre, siempre que sus **parámetros (firma)** sean diferentes."
+  },
+  {
+    q: "¿Cuál es el resultado de la expresión `10 % 3` en Java?",
+    opts: [
+      "3.33",
+      "1",
+      "3",
+      "0"
+    ],
+    a: 1,
+    exp: "El operador `%` calcula el **resto de la división entera**. 10 dividido por 3 es 3 con un resto de **1**."
+  },
+  {
+    q: "¿Qué tipo de dato primitivo en Java tiene el mayor rango de valores para números de coma flotante?",
+    opts: [
+      "`float`",
+      "`int`",
+      "`double`",
+      "`long`"
+    ],
+    a: 2,
+    exp: "**`double`** (64 bits) tiene el doble de precisión y un rango mucho mayor que `float` (32 bits)."
+  },
+  {
+    q: "¿Qué estructura de control de flujo en Java se utiliza cuando el número de iteraciones es conocido de antemano?",
+    opts: [
+      "`do-while`",
+      "`if-else`",
+      "`for`",
+      "`switch`"
+    ],
+    a: 2,
+    exp: "El bucle **`for`** es ideal para iteraciones donde se conoce el número exacto de repeticiones o el rango."
+  },
+  {
+    q: "¿Qué es una clase sellada (*sealed class*) en Java?",
+    opts: [
+      "Una clase que no puede tener métodos abstractos.",
+      "Una clase que no puede ser heredada por ninguna otra clase.",
+      "Una clase que especifica explícitamente qué clases pueden extenderla e implementarla.",
+      "Una clase que implementa una sola interfaz."
+    ],
+    a: 2,
+    exp: "Las *sealed classes* (introducidas en Java 17) permiten que una clase o interfaz restrinja **qué otras clases o interfaces pueden extenderlas o implementarlas**."
+  },
+  {
+    q: "En C#, ¿qué estructura se utiliza para definir un contrato que implementan las clases, similar a las interfaces de Java?",
+    opts: [
+      "Delegate.",
+      "Interface.",
+      "Struct.",
+      "Class."
+    ],
+    a: 1,
+    exp: "Al igual que en Java, C# utiliza la estructura **`interface`** para definir un contrato que las clases deben implementar."
+  },
+  {
+    q: "¿Qué diferencia a C# de Java en términos de herencia de clases?",
+    opts: [
+      "Java soporta herencia múltiple de clases, C# no.",
+      "C# soporta herencia múltiple de clases, Java no.",
+      "Ambos lenguajes solo permiten la **herencia simple de clases**, pero ambos permiten la herencia múltiple de interfaces.",
+      "C# solo permite la herencia de interfaces."
+    ],
+    a: 2,
+    exp: "Tanto C# como Java solo permiten la **herencia simple de clases** (una clase puede heredar de una única clase padre), pero pueden implementar múltiples interfaces."
+  },
+  {
+    q: "¿Qué es un delegado en C#?",
+    opts: [
+      "Una referencia a una propiedad de una clase.",
+      "Una referencia a un tipo de dato primitivo.",
+      "Un tipo que representa referencias a métodos con una lista de parámetros y tipo de retorno específicos (punteros a funciones de forma segura).",
+      "Una clase que solo puede contener métodos estáticos."
+    ],
+    a: 2,
+    exp: "Un **delegado** es el equivalente en C# de un puntero a función (o puntero a método), utilizado para invocar métodos de forma indirecta."
+  },
+  {
+    q: "¿Cuál es el propósito del `using` statement en C#?",
+    opts: [
+      "Importar un *namespace* para usar sus clases sin prefijo.",
+      "Definir una variable constante.",
+      "Asegurar que un objeto que implementa `IDisposable` se deseche correctamente al final de un bloque de código.",
+      "Declarar una clase abstracta."
+    ],
+    a: 2,
+    exp: "El **`using` statement** asegura que se llama al método `Dispose()` en objetos que implementan `IDisposable` (recursos no administrados), liberando recursos de manera determinista."
+  },
+  {
+    q: "¿Qué atributo de Jakarta EE se utiliza para la inyección de dependencias en un componente?",
+    opts: [
+      "`@Stateless`",
+      "`@Inject`",
+      "`@Resource`",
+      "`@PersistenceContext`"
+    ],
+    a: 1,
+    exp: "El atributo **`@Inject`** (parte de la especificación CDI - Contexts and Dependency Injection) es el mecanismo estándar de Jakarta EE para la inyección de dependencias."
+  },
+  {
+    q: "¿Qué es un EJB (Enterprise Java Bean)?",
+    opts: [
+      "Un componente del lado del cliente utilizado para mostrar páginas web.",
+      "Un componente de lado del servidor gestionado por un contenedor, que encapsula la lógica de negocio y proporciona servicios transaccionales, de seguridad, etc.",
+      "Un tipo de dato primitivo especial para bases de datos.",
+      "Una librería para el acceso a servicios de mensajería."
+    ],
+    a: 1,
+    exp: "Un **EJB** es un componente de servidor clave en Jakarta EE para la lógica de negocio y la gestión automática de servicios empresariales por parte del contenedor."
+  },
+  {
+    q: "¿Qué tipo de EJB se utiliza para encapsular la lógica de negocio y no mantiene estado con el cliente?",
+    opts: [
+      "Entity Bean.",
+      "Message-Driven Bean.",
+      "Stateful Session Bean.",
+      "Stateless Session Bean."
+    ],
+    a: 3,
+    exp: "El **Stateless Session Bean (EJB de sesión sin estado)** se utiliza para tareas de negocio que no requieren mantener el estado de la conversación con el cliente."
+  },
+  {
+    q: "¿Qué tipo de EJB mantiene un estado de conversación con el cliente entre múltiples llamadas a métodos?",
+    opts: [
+      "Message-Driven Bean.",
+      "Stateless Session Bean.",
+      "Entity Bean.",
+      "Stateful Session Bean."
+    ],
+    a: 3,
+    exp: "El **Stateful Session Bean (EJB de sesión con estado)** mantiene el estado de la conversación de un cliente a lo largo de varias interacciones."
+  },
+  {
+    q: "¿Qué es JAX-WS en el contexto de Jakarta EE?",
+    opts: [
+      "La especificación para el mapeo de objetos a bases de datos relacionales.",
+      "El API para crear servicios web SOAP (XML-based).",
+      "El API para servicios web RESTful.",
+      "El API para el procesamiento de JSON."
+    ],
+    a: 1,
+    exp: "**JAX-WS (Jakarta API for XML Web Services)** es la API estándar para la creación de servicios web basados en SOAP (protocolo basado en XML)."
+  },
+  {
+    q: "¿Qué capa de la arquitectura Java EE/Jakarta EE contiene los Servlets y JSPs?",
+    opts: [
+      "Capa de Negocio.",
+      "Capa de Integración.",
+      "Capa de Presentación (Web).",
+      "Capa de Datos."
+    ],
+    a: 2,
+    exp: "Los **Servlets y JSPs** (JavaServer Pages) son componentes que residen en el contenedor Web y son parte de la **Capa de Presentación**."
+  },
+  {
+    q: "¿Cuál es el propósito del archivo `web.xml` en una aplicación web Java EE?",
+    opts: [
+      "Almacenar la lógica de negocio de la aplicación.",
+      "Definir el mapeo objeto-relacional (ORM).",
+      "Configurar los despliegues de la aplicación web, como Servlets, filtros y oyentes (listeners).",
+      "Contener las plantillas HTML para la vista."
+    ],
+    a: 2,
+    exp: "El **`web.xml`** (descriptor de despliegue) se utiliza para configurar Servlets, *filters*, *listeners* y otros ajustes de la aplicación web, aunque gran parte de esto ahora se puede hacer con anotaciones."
+  },
+  {
+    q: "¿Qué tecnología de Jakarta EE se utiliza para crear páginas web dinámicas con código Java incrustado?",
+    opts: [
+      "Jakarta RESTful Web Services.",
+      "Enterprise Java Beans (EJB).",
+      "Jakarta Server Pages (JSP).",
+      "Jakarta Server Faces (JSF)."
+    ],
+    a: 2,
+    exp: "Las **Jakarta Server Pages (JSP)** permiten incrustar código Java (*scriptlets*) directamente en el marcado HTML para generar contenido dinámico."
+  },
+  {
+    q: "¿Cuál es el principal objetivo de `Microprofile` en el ecosistema Jakarta EE?",
+    opts: [
+      "Sustituir a la plataforma Java SE para aplicaciones de escritorio.",
+      "Optimizar Jakarta EE para el desarrollo de aplicaciones web tradicionales con JSP.",
+      "Proveer APIs y especificaciones optimizadas para arquitecturas de microservicios.",
+      "Crear conectores para sistemas de información empresarial (EIS)."
+    ],
+    a: 2,
+    exp: "**Microprofile** es un conjunto de especificaciones diseñadas para el desarrollo de **microservicios** con APIs más ligeras y modulares."
+  },
+  {
+    q: "¿Qué especificación de Jakarta EE se utiliza para el manejo de transacciones distribuidas?",
+    opts: [
+      "Jakarta Security.",
+      "Jakarta Concurrency.",
+      "Jakarta Transactions.",
+      "Jakarta Interceptors."
+    ],
+    a: 2,
+    exp: "La especificación **Jakarta Transactions** proporciona el API para el manejo de transacciones, incluyendo las distribuidas (XA)."
+  },
+  {
+    q: "En .NET, ¿qué componente traduce el CIL (Common Intermediate Language) a código máquina nativo?",
+    opts: [
+      "El Recolector de Basura.",
+      "El Common Language Specification (CLS).",
+      "El Just-In-Time (JIT) Compiler.",
+      "El ADO.NET."
+    ],
+    a: 2,
+    exp: "El compilador **Just-In-Time (JIT)** es el encargado de traducir el bytecode (CIL) a código de máquina en el momento de la ejecución."
+  },
+  {
+    q: "¿Qué es el CLS (Common Language Specification)?",
+    opts: [
+      "Un lenguaje de programación desarrollado por Microsoft.",
+      "El conjunto de reglas que define las características que debe soportar un lenguaje .NET para interactuar con otros lenguajes .NET.",
+      "El compilador de C#.",
+      "La máquina virtual de .NET."
+    ],
+    a: 1,
+    exp: "El **CLS** es un conjunto de reglas que asegura la interoperabilidad entre diferentes lenguajes de la plataforma .NET."
+  },
+  {
+    q: "¿Qué significa la sigla BCL en el contexto de .NET?",
+    opts: [
+      "Binary Code Layer.",
+      "Basic Component Logic.",
+      "Base Class Library.",
+      "Business Component Layer."
+    ],
+    a: 2,
+    exp: "**BCL** significa **Base Class Library** y es el núcleo de las APIs disponibles para los desarrolladores .NET."
+  },
+  {
+    q: "¿Cuál es el concepto central que permite la interoperabilidad de lenguajes en .NET?",
+    opts: [
+      "Windows Presentation Foundation (WPF).",
+      "Common Type System (CTS).",
+      "ASP.NET Core.",
+      "Entity Framework."
+    ],
+    a: 1,
+    exp: "El **CTS (Common Type System)** es el estándar que define cómo se declaran, utilizan y gestionan los tipos, permitiendo que el código de diferentes lenguajes se comunique."
+  },
+  {
+    q: "¿Qué herramienta de .NET proporciona funcionalidades ORM (Object-Relational Mapping)?",
+    opts: [
+      "WinForms.",
+      "Web API.",
+      "Entity Framework.",
+      "NHibernate."
+    ],
+    a: 2,
+    exp: "**Entity Framework** es la solución oficial de Microsoft para el mapeo objeto-relacional en la plataforma .NET."
+  },
+  {
+    q: "¿Qué es ADO.NET?",
+    opts: [
+      "El framework para crear aplicaciones de escritorio.",
+      "El conjunto de clases y componentes para acceder y manipular datos de bases de datos relacionales y otras fuentes.",
+      "El compilador de .NET.",
+      "El motor de renderizado web de .NET."
+    ],
+    a: 1,
+    exp: "**ADO.NET** es la tecnología de acceso a datos de .NET Framework, diseñada para la conexión a fuentes de datos."
+  },
+  {
+    q: "¿Qué instrucción se utiliza en C++ para asignar memoria dinámicamente?",
+    opts: [
+      "`malloc`",
+      "`new`",
+      "`free`",
+      "`delete`"
+    ],
+    a: 1,
+    exp: "El operador **`new`** se utiliza en C++ para la asignación dinámica de memoria (y se libera con `delete`)."
+  },
+  {
+    q: "¿Qué estructura de control en C++ se ejecuta al menos una vez, independientemente de la condición?",
+    opts: [
+      "`while`",
+      "`for`",
+      "`do-while`",
+      "`if-else`"
+    ],
+    a: 2,
+    exp: "El bucle **`do-while`** ejecuta su bloque de código al menos una vez antes de comprobar la condición."
+  },
+  {
+    q: "En C++, ¿cuál es el operador de resolución de ámbito (*scope resolution operator*)?",
+    opts: [
+      "`->`",
+      "`::`",
+      "`.`",
+      "`:`"
+    ],
+    a: 1,
+    exp: "El operador **`::`** se utiliza para identificar y acceder a miembros en un ámbito (scope) específico, como una clase o *namespace*."
+  },
+  {
+    q: "¿Cuál es la función del preprocesador en C/C++?",
+    opts: [
+      "Traducir el código fuente a código máquina nativo.",
+      "Realizar el primer paso de la compilación, manejando directivas como `#include` y `#define` antes de que el código llegue al compilador.",
+      "Gestionar la memoria dinámica.",
+      "Definir las plantillas de funciones."
+    ],
+    a: 1,
+    exp: "El **preprocesador** es el encargado de las directivas (`#include`, `#define`, etc.) antes de la fase de compilación real."
+  },
+  {
+    q: "¿Cuál es el patrón de diseño que define una familia de algoritmos, encapsula cada uno de ellos y los hace intercambiables?",
+    opts: [
+      "Patrón Observer.",
+      "Patrón Singleton.",
+      "Patrón Strategy.",
+      "Patrón Decorator."
+    ],
+    a: 2,
+    exp: "El **Patrón Strategy** permite que el algoritmo varíe independientemente de los clientes que lo usan."
+  },
+  {
+    q: "¿Qué patrón de diseño garantiza que una clase solo tenga una instancia y proporciona un punto de acceso global a ella?",
+    opts: [
+      "Patrón Factory Method.",
+      "Patrón Abstract Factory.",
+      "Patrón Singleton.",
+      "Patrón Builder."
+    ],
+    a: 2,
+    exp: "El **Patrón Singleton** es un patrón creacional que restringe la instanciación de una clase a un solo objeto."
+  },
+  {
+    q: "El principio de Sustitución de Liskov (LSP) es parte de qué conjunto de principios de diseño orientado a objetos?",
+    opts: [
+      "Principios DRY.",
+      "Principios GRASP.",
+      "Principios SOLID.",
+      "Principios KISS."
+    ],
+    a: 2,
+    exp: "El **Principio de Sustitución de Liskov (LSP)** forma parte de los cinco **Principios SOLID** (S.O.L.I.D.)."
+  },
+  {
+    q: "¿Qué concepto de DSBC se relaciona con la capacidad de un componente para conocer su estado y notificar sobre sus cambios?",
+    opts: [
+      "Independencia de tiempo y espacio.",
+      "Composición tardía.",
+      "Introspección.",
+      "Reemplazabilidad."
+    ],
+    a: 2,
+    exp: "La **Introspección** es la capacidad de un componente de revelar su estado, sus capacidades, su interfaz y sus contratos."
+  },
+  {
+    q: "¿Cuál de las siguientes es una característica principal del lenguaje C#?",
+    opts: [
+      "Es un lenguaje interpretado.",
+      "Es un lenguaje puramente funcional.",
+      "Es un lenguaje orientado a objetos, moderno y basado en componentes.",
+      "No utiliza la recolección de basura."
+    ],
+    a: 2,
+    exp: "C# es un lenguaje **orientado a objetos, moderno, basado en componentes** y parte de la plataforma .NET."
+  },
+  {
+    q: "¿Qué protocolo se utiliza principalmente para servicios web RESTful en la arquitectura Jakarta EE?",
+    opts: [
+      "SOAP.",
+      "JMS.",
+      "HTTP.",
+      "RMI."
+    ],
+    a: 2,
+    exp: "Los servicios web RESTful utilizan el protocolo **HTTP** como base, aprovechando sus métodos (GET, POST, PUT, DELETE, etc.)."
+  },
+  {
+    q: "¿Qué tipo de variable es accesible por todos los métodos de una clase en Java, pero solo si es miembro de la clase y no es local de un método?",
+    opts: [
+      "Variable local.",
+      "Variable de instancia (o campo).",
+      "Variable de clase (estática).",
+      "Parámetro de método."
+    ],
+    a: 1,
+    exp: "Las **variables de instancia** son miembros de la clase, accesibles por todos los métodos de instancia y su valor es único para cada objeto."
+  },
+  {
+    q: "¿Qué anotación de Jakarta Persistence (JPA) se utiliza para marcar una clase como una entidad que será mapeada a una tabla de la base de datos?",
+    opts: [
+      "`@Table`",
+      "`@Persistence`",
+      "`@Entity`",
+      "`@Repository`"
+    ],
+    a: 2,
+    exp: "La anotación **`@Entity`** se utiliza para declarar una clase como una entidad persistente en JPA."
+  }
+]
+
+
+
+// --- Render de todas las preguntas a la vez ---
+const quiz = document.getElementById('quiz');
+const totalEl = document.getElementById('total');
+const answeredEl = document.getElementById('answered');
+const scoreEl = document.getElementById('score');
+const correctsEl = document.getElementById('corrects');
+const liveEl = document.getElementById('live');
+const bar = document.getElementById('bar');
+
+let score = 0;
+let answered = 0;
+
+function updateHud(){
+  const total = QUESTIONS.length;
+  totalEl.textContent = total;
+  answeredEl.textContent = answered;
+  scoreEl.textContent = score;
+  correctsEl.textContent = score;
+  const pct = total ? Math.round((score/total)*100) : 0;
+  liveEl.textContent = pct;
+  bar.style.width = `${Math.min(100, (answered/total)*100)}%`;
+}
+
+function makeQuestionCard(qobj, index){
+  const wrapper = document.createElement('article');
+  wrapper.className = 'card';
+
+  const q = document.createElement('div');
+  q.className = 'q';
+  q.innerHTML = (index+1) + '. ' + qobj.q;
+  wrapper.appendChild(q);
+
+  const opts = document.createElement('div');
+  opts.className = 'opts';
+
+  qobj.opts.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = text;
+    btn.addEventListener('click', () => handleAnswer(btn, i, qobj));
+    opts.appendChild(btn);
+  });
+
+  const fb = document.createElement('div');
+  fb.className = 'explain';
+  fb.id = 'fb-' + index;
+
+  wrapper.appendChild(opts);
+  wrapper.appendChild(fb);
+
+  return wrapper;
+}
+
+function handleAnswer(button, selectedIdx, qobj){
+  if (button.parentElement.dataset.locked === '1') return; // ya corregida
+
+  const buttons = Array.from(button.parentElement.querySelectorAll('.opt'));
+  buttons.forEach(b => b.disabled = true);
+
+  const correct = qobj.a;
+  if (selectedIdx === correct){
+    button.classList.add('correct');
+    score++;
+    setFeedback(button, `✔️ ¡Correcto! ${qobj.exp || ''}`);
+  } else {
+    button.classList.add('wrong');
+    buttons[correct].classList.add('correct');
+    setFeedback(button, `❌ No es correcto. Respuesta correcta: <strong>${buttons[correct].textContent}</strong>. ${qobj.exp || ''}`);
+  }
+
+  answered++;
+  button.parentElement.dataset.locked = '1';
+  updateHud();
+}
+
+function setFeedback(button, html){
+  const fb = button.parentElement.parentElement.querySelector('.explain');
+  fb.innerHTML = html;
+}
+
+function resetAll(){
+  score = 0;
+  answered = 0;
+  // limpiar y volver a renderizar
+  quiz.innerHTML = '';
+  QUESTIONS.forEach((q, i) => quiz.appendChild(makeQuestionCard(q, i)));
+  updateHud();
+}
+
+document.getElementById('btnReset').addEventListener('click', resetAll);
+
+// Inicializar
+resetAll();
+</script>
+</body>
+</html>

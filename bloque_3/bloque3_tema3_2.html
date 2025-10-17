@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bloque 3 – Tema 3 (SQL)</title>
+  <style>
+    :root{
+      --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#94a3b8; --accent:#22d3ee;
+      --right:#16a34a; --wrong:#dc2626; --btn:#1f2937; --btn-hover:#374151;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";background:radial-gradient(1200px 800px at 20% 0%,#0b1220,var(--bg));color:var(--text);min-height:100vh}
+    header{position:sticky;top:0;background:rgba(15,23,42,.7);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,.08);padding:12px 16px;z-index:10}
+    .container{max-width:1000px;margin:0 auto;padding:18px}
+    h1{margin:0;font-size:clamp(22px,3.5vw,34px)}
+    .sub{color:var(--muted)}
+    .board{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+    .pill{font-size:13px;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12)}
+    .btn{background:linear-gradient(180deg,#111827,#0b1220);color:var(--text);border:1px solid rgba(255,255,255,.1);padding:10px 14px;border-radius:12px;cursor:pointer;transition:transform .06s ease,filter .2s ease}
+    .btn:hover{filter:brightness(1.1)} .btn:active{transform:translateY(1px)}
+    .grid{display:grid;gap:16px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:18px}
+    .q{font-size:clamp(16px,2.2vw,20px);line-height:1.35;margin-bottom:12px}
+    .opts{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:640px){.opts{grid-template-columns:1fr 1fr}}
+    .opt{background:var(--btn);border:1px solid rgba(255,255,255,.08);color:var(--text);padding:12px 14px;border-radius:12px;text-align:left;cursor:pointer;transition:transform .06s ease,background .2s}
+    .opt:hover{background:var(--btn-hover)}
+    .opt[disabled]{opacity:.9;cursor:not-allowed}
+    .opt.correct{outline:2px solid var(--right);box-shadow:0 0 0 3px rgba(22,163,74,.2) inset}
+    .opt.wrong{outline:2px solid var(--wrong);box-shadow:0 0 0 3px rgba(220,38,38,.2) inset}
+    .explain{color:var(--muted);font-size:14px;margin-top:8px;min-height:20px}
+    .summary{margin:18px 0 6px}
+    .footbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .progress{height:10px;width:100%;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,#06b6d4,#22d3ee);transition:width .35s ease}
+    footer{padding:24px 16px;color:var(--muted);text-align:center}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Bloque 3 – Tema 3 (SQL)</h1>
+      <div class="board">
+        <div class="pill">Respondidas: <span id="answered">0</span> / <span id="total">0</span></div>
+        <div class="pill">Puntos: <span id="score">0</span></div>
+        <div class="pill">Correctas: <span id="corrects">0</span></div>
+        <button id="btnReset" class="btn">Reiniciar</button>
+      </div>
+      <div class="progress" style="margin-top:10px"><div id="bar" class="bar"></div></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="quiz" class="grid"></section>
+    <div class="summary">
+      <div class="pill">Resultado en vivo: <strong><span id="live">0</span>%</strong></div>
+    </div>
+  </main>
+
+  <footer>
+    Hecho con ❤️ en HTML + JS. Haz clic en cada opción para autocorregir. Usa “Reiniciar” para volver a empezar.
+  </footer>
+
+<script>
+
+const QUESTIONS = [
+  {
+    q: "¿Qué significan las siglas QL en el contexto de las bases de datos?",
+    opts: [
+      "Query Logic",
+      "Query Language",
+      "Qualitative Language",
+      "Quantitative Logic"
+    ],
+    a: 1,
+    exp: "QL significa Query Language, que en español se traduce como 'Lenguaje de consulta' o 'lenguaje de interrogación'."
+  },
+  {
+    q: "¿Qué es un lenguaje de interrogación según el documento?",
+    opts: [
+      "Un lenguaje de programación para crear páginas web.",
+      "Un lenguaje que solicita y recupera datos de una B.D. mediante el envío de consultas.",
+      "Un lenguaje de programación de bajo nivel.",
+      "Un lenguaje para crear aplicaciones de escritorio."
+    ],
+    a: 1,
+    exp: "El documento define QL, o lenguajes de interrogación, como cualquier lenguaje de programación que solicita y recupera datos de una Base de Datos mediante el envío de consultas."
+  },
+  {
+    q: "¿Cómo se clasifica un lenguaje de consulta que no indica un procedimiento concreto para obtener la información?",
+    opts: [
+      "Lenguaje procedimental",
+      "Lenguaje imperativo",
+      "Lenguaje declarativo",
+      "Lenguaje de alto nivel"
+    ],
+    a: 2,
+    exp: "Los lenguajes no procedimentales, también llamados declarativos, permiten al usuario describir la información que desea obtener sin especificar el procedimiento para conseguirla."
+  },
+  {
+    q: "¿Cuál de los siguientes es un lenguaje de consulta de tipo declarativo mencionado en el documento?",
+    opts: [
+      "Álgebra relacional",
+      "Cálculo relacional",
+      "QUEL",
+      "Datalog"
+    ],
+    a: 1,
+    exp: "El Cálculo relacional es un lenguaje de consulta de tipo declarativo, que describe la respuesta deseada sin especificar cómo obtenerla. El Álgebra relacional, por otro lado, es procedimental."
+  },
+  {
+    q: "¿Qué diferencia al Cálculo relacional de tuplas (TRC) del Cálculo relacional de dominios (DRC)?",
+    opts: [
+      "En TRC las variables son tuplas, en DRC son atributos de las tuplas.",
+      "TRC es procedimental y DRC es declarativo.",
+      "TRC se basa en SQL y DRC en QUEL.",
+      "TRC utiliza un estándar ISO y DRC no."
+    ],
+    a: 0,
+    exp: "El Cálculo relacional de tuplas (TRC) tiene variables que son tuplas, mientras que el Cálculo relacional de dominios (DRC) tiene variables que son atributos de las tuplas."
+  },
+  {
+    q: "¿Qué significan las siglas SQL?",
+    opts: [
+      "Structured Query Language",
+      "System Query Language",
+      "Simple Query Logic",
+      "Standard Query Logic"
+    ],
+    a: 0,
+    exp: "SQL son las siglas en inglés de Structured Query Language, que se traduce como 'lenguaje de consulta estructurado'."
+  },
+  {
+    q: "Según el documento, ¿qué tipo de lenguaje es SQL?",
+    opts: [
+      "Procedimental",
+      "Declarativo",
+      "Imperativo",
+      "De alto nivel"
+    ],
+    a: 1,
+    exp: "El documento especifica que SQL es un lenguaje declarativo, ya que se indica 'qué' se quiere conseguir, pero no se especifica 'cómo'."
+  },
+  {
+    q: "¿Quién propuso el modelo relacional en el que se basó la creación de SQL?",
+    opts: [
+      "Sergey Brin",
+      "Peter Chen",
+      "Edgar Frank Codd",
+      "James Gosling"
+    ],
+    a: 2,
+    exp: "El documento menciona que los laboratorios de IBM crearon el lenguaje SEQUEL basándose en el modelo relacional propuesto por Edgar Frank Codd en su artículo de 1970."
+  },
+  {
+    q: "¿Cuál fue el nombre original del lenguaje SQL, creado por IBM?",
+    opts: [
+      "SEQUEL",
+      "SQL/86",
+      "Oracle V",
+      "SYSTEM R"
+    ],
+    a: 0,
+    exp: "El lenguaje original creado por IBM fue llamado SEQUEL (Structured English QUEry Language), que luego evolucionó a SQL."
+  },
+  {
+    q: "¿En qué año ANSI adoptó SQL como el lenguaje estándar para la gestión de bases de datos relacionales?",
+    opts: [
+      "1979",
+      "1986",
+      "1992",
+      "2003"
+    ],
+    a: 1,
+    exp: "ANSI adoptó SQL como el lenguaje estándar en octubre de 1986, y la ISO lo adoptó en 1987 con el nombre de SQL/86."
+  },
+  {
+    q: "¿Qué versión del estándar SQL introdujo las 'expresiones regulares', 'consultas recursivas' y 'triggers'?",
+    opts: [
+      "SQL/89",
+      "SQL-92",
+      "SQL/1999 (SQL3)",
+      "SQL/2003"
+    ],
+    a: 2,
+    exp: "La versión SQL/1999, también conocida como SQL3, fue la cuarta revisión del estándar e introdujo estas nuevas funcionalidades."
+  },
+  {
+    q: "¿Qué método de uso de SQL se caracteriza porque sus sentencias se construyen y se compilan en tiempo de ejecución?",
+    opts: [
+      "SQL estático",
+      "SQL dinámico",
+      "SQL embebido",
+      "SQL modular"
+    ],
+    a: 1,
+    exp: "El SQL dinámico permite que las sentencias se construyan y compilen en tiempo de ejecución, lo que le otorga una gran flexibilidad."
+  },
+  {
+    q: "¿Cuál es una desventaja del SQL dinámico frente al SQL estático?",
+    opts: [
+      "Es menos flexible.",
+      "Las sentencias son menos eficientes.",
+      "No permite a los usuarios ingresar sus propias consultas.",
+      "Sus sentencias están incrustadas en una aplicación."
+    ],
+    a: 1,
+    exp: "El SQL dinámico es muy flexible, pero las sentencias son menos eficientes que las del SQL estático, que está preprocesado y es más rápido."
+  },
+  {
+    q: "¿Qué tipo de uso de SQL es también conocido como 'SQL incrustado'?",
+    opts: [
+      "SQL Dinámico",
+      "SQL Interactivo",
+      "SQL Estático",
+      "SQL Modular"
+    ],
+    a: 2,
+    exp: "El SQL Estático también se le denomina 'SQL incrustado' o 'SQL inmerso en programas', porque los mandatos ya están escritos y no cambian en tiempo de ejecución."
+  },
+  {
+    q: "¿Qué son los 'dominios' en SQL?",
+    opts: [
+      "Programas que gestionan la integridad de los datos.",
+      "Nombres de tablas.",
+      "Reglas que se aplican a un campo de una tabla y restringen los valores permitidos.",
+      "Nombres de bases de datos."
+    ],
+    a: 2,
+    exp: "El documento define los dominios como 'reglas que se aplican a un campo en una tabla, restringen el conjunto de valores permitidos para ese campo y, por tanto, aplican la integridad de datos'."
+  },
+  {
+    q: "¿Qué tipo de dato se utiliza para cadenas de caracteres de tamaño fijo en SQL?",
+    opts: [
+      "VARCHAR",
+      "NVARCHAR",
+      "CHAR",
+      "TEXT"
+    ],
+    a: 2,
+    exp: "El tipo de dato `CHAR` se utiliza para cadenas de tamaño fijo. Su tamaño en bytes debe estar entre 1 y 8000."
+  },
+  {
+    q: "Si no se especifica 'n' en una declaración de tipo `CHAR`, ¿cuál es la longitud predeterminada?",
+    opts: [
+      "0",
+      "1",
+      "10",
+      "30"
+    ],
+    a: 1,
+    exp: "Si no se especifica la longitud `n` en una declaración, el valor predeterminado para `CHAR` es 1."
+  },
+  {
+    q: "¿Qué palabra clave se usa en SQL para dar un nombre temporal (alias) a una columna en una consulta?",
+    opts: [
+      "AS",
+      "ALIAS",
+      "SET",
+      "NAME"
+    ],
+    a: 0,
+    exp: "La palabra clave `AS` se utiliza para asignar un alias a un atributo en una consulta, y este nuevo nombre solo existe durante la duración de la misma."
+  },
+  {
+    q: "¿Qué tipo de dato de cadena de caracteres permite un almacenamiento de hasta 2GB en SQL?",
+    opts: [
+      "CHAR",
+      "NCHAR",
+      "VARCHAR",
+      "TEXT"
+    ],
+    a: 2,
+    exp: "El tipo `VARCHAR` puede utilizar la opción `max` para indicar un tamaño de restricción de columna de hasta un almacenamiento máximo de 2GB."
+  },
+  {
+    q: "Según el documento, ¿qué cláusula se utiliza en una consulta para omitir los duplicados?",
+    opts: [
+      "GROUP BY",
+      "ORDER BY",
+      "DISTINCT",
+      "HAVING"
+    ],
+    a: 2,
+    exp: "El predicado `DISTINCT` se indica antes de los nombres de columna para evitar que se seleccionen filas duplicadas en una consulta."
+  },
+  {
+    q: "¿Cuál es el valor predeterminado del orden en la cláusula `ORDER BY`?",
+    opts: [
+      "DESC",
+      "RANDOM",
+      "ASC",
+      "No tiene un valor predeterminado."
+    ],
+    a: 2,
+    exp: "El valor predeterminado para `ORDER BY` es `ASC` (orden ascendente). Si no se indica `DESC`, los resultados se ordenarán de menor a mayor."
+  },
+  {
+    q: "¿Qué cláusula se utiliza para filtrar los registros en una consulta de selección?",
+    opts: [
+      "FROM",
+      "SELECT",
+      "WHERE",
+      "HAVING"
+    ],
+    a: 2,
+    exp: "La cláusula `WHERE` se utiliza para establecer las condiciones que deben cumplir los registros para ser seleccionados. Actúa como un filtro de registros."
+  },
+  {
+    q: "¿Cuál es la sintaxis correcta para realizar una consulta básica en SQL?",
+    opts: [
+      "SELECT <nombreTabla> FROM <nombreCampos>",
+      "FROM <nombreCampos> SELECT <nombreTabla>",
+      "SELECT <nombreCampos> FROM <nombreTabla>",
+      "FROM <nombreTabla> SELECT <nombreCampos>"
+    ],
+    a: 2,
+    exp: "La sintaxis básica para una consulta de selección es `SELECT <nombreCampos> FROM <nombreTabla>`. El `SELECT` indica los campos y el `FROM` indica la tabla."
+  },
+  {
+    q: "¿Qué comando se utiliza para modificar la estructura de los objetos de una base de datos?",
+    opts: [
+      "INSERT",
+      "UPDATE",
+      "ALTER TABLE",
+      "SELECT"
+    ],
+    a: 2,
+    exp: "El comando `ALTER TABLE` se utiliza para modificar la estructura de los objetos, como la adición o eliminación de campos."
+  },
+  {
+    q: "¿Qué tipo de dato de cadena de caracteres, obsoleto según el documento, se utiliza para almacenar valores grandes?",
+    opts: [
+      "CHAR",
+      "VARCHAR",
+      "NTEXT",
+      "NVARCHAR"
+    ],
+    a: 2,
+    exp: "El documento indica que los tipos de datos `NTEXT`, `TEXT` e `IMAGE` se utilizan para almacenar valores de gran tamaño, pero se prevé que se eliminen en una versión futura de SQL."
+  },
+  {
+    q: "Según el documento, ¿cuál de los siguientes no es un tipo de 'Combinación externa' (OUTER JOIN)?",
+    opts: [
+      "LEFT JOIN",
+      "RIGHT JOIN",
+      "INNER JOIN",
+      "FULL JOIN"
+    ],
+    a: 2,
+    exp: "El documento clasifica `LEFT JOIN`, `RIGHT JOIN` y `FULL JOIN` como tipos de 'Combinación externa' (OUTER JOIN). `INNER JOIN` es una combinación interna."
+  },
+  {
+    q: "¿Cuál es el objetivo principal de las 'Consultas de selección' (DQL)?",
+    opts: [
+      "Modificar datos en las tablas.",
+      "Borrar datos de las tablas.",
+      "Visualizar, seleccionar y organizar los datos de las tablas.",
+      "Crear nuevas tablas y bases de datos."
+    ],
+    a: 2,
+    exp: "El objetivo de las Consultas de selección (DQL) es visualizar, seleccionar y organizar los datos de las tablas que componen la base de datos, sin modificarlos."
+  },
+  {
+    q: "En una consulta, ¿qué cláusula se utiliza para agrupar las filas de una tabla en función de un campo específico?",
+    opts: [
+      "WHERE",
+      "SELECT",
+      "GROUP BY",
+      "ORDER BY"
+    ],
+    a: 2,
+    exp: "La cláusula `GROUP BY` agrupa las filas de una tabla en función del campo que se le indique. Se usa a menudo con funciones de agregado."
+  },
+  {
+    q: "¿Qué cláusula se utiliza para establecer una condición que debe cumplir un grupo de agregación, a diferencia de `WHERE` que se aplica a filas?",
+    opts: [
+      "GROUP BY",
+      "HAVING",
+      "UNION",
+      "DISTINCT"
+    ],
+    a: 1,
+    exp: "La cláusula `HAVING` se utiliza para especificar una condición que debe cumplir un grupo de agregación, mientras que `WHERE` filtra filas individuales."
+  },
+  {
+    q: "¿Cuál de los siguientes comandos no es parte de las 'Consultas de acción'?",
+    opts: [
+      "INSERT",
+      "UPDATE",
+      "SELECT",
+      "DELETE"
+    ],
+    a: 2,
+    exp: "Las 'Consultas de acción' modifican los datos de la base de datos. Los comandos de este tipo son `INSERT`, `UPDATE`, `DELETE` y `MERGE`. `SELECT` es una 'Consulta de selección' que solo visualiza datos."
+  },
+  {
+    q: "¿Qué se almacena físicamente en la base de datos al definir una `VIEW`?",
+    opts: [
+      "Una copia de los datos de las tablas originales.",
+      "El resultado de la consulta.",
+      "Los metadatos de la vista, pero no los datos.",
+      "El código de la vista y los datos."
+    ],
+    a: 2,
+    exp: "El documento especifica que las vistas se almacenan como metadatos en la base de datos, no almacenan datos, sino que devuelven el resultado de la consulta cuando son invocadas."
+  },
+  {
+    q: "¿Cuál es el propósito de la cláusula `FROM` en una consulta `SELECT`?",
+    opts: [
+      "Filtrar los registros.",
+      "Indicar la tabla de la cual se quieren seleccionar los registros.",
+      "Ordenar los resultados.",
+      "Seleccionar los campos."
+    ],
+    a: 1,
+    exp: "La cláusula `FROM` es obligatoria en una consulta de selección y especifica la tabla o tablas de las que se quieren obtener los datos."
+  },
+  {
+    q: "¿Qué comando de SQL se utiliza para combinar los resultados de dos o más sentencias `SELECT`?",
+    opts: [
+      "JOIN",
+      "UNION",
+      "GROUP BY",
+      "MERGE"
+    ],
+    a: 1,
+    exp: "La sentencia `UNION` se utiliza para combinar los resultados de dos o más sentencias `SELECT` en una sola tabla de resultados."
+  },
+  {
+    q: "¿Qué restricción asegura que todos los valores en una columna sean distintos y permite valores nulos?",
+    opts: [
+      "PRIMARY KEY",
+      "FOREIGN KEY",
+      "NOT NULL",
+      "UNIQUE"
+    ],
+    a: 3,
+    exp: "La restricción `UNIQUE` asegura que todos los valores en una columna sean distintos. A diferencia de la clave primaria, acepta valores nulos."
+  },
+  {
+    q: "¿Qué es una 'transacción' en SQL?",
+    opts: [
+      "Una consulta de selección.",
+      "Una unidad única de trabajo.",
+      "Un tipo de dato.",
+      "Una cláusula de consulta."
+    ],
+    a: 1,
+    exp: "Una transacción es una unidad única de trabajo. Si tiene éxito, todas las modificaciones se confirman; si encuentra errores, se borran."
+  },
+  {
+    q: "¿Qué comando de TCL (Transaction Control Language) se utiliza para hacer permanentes las modificaciones de datos en una transacción?",
+    opts: [
+      "ROLLBACK",
+      "SAVEPOINT",
+      "COMMIT",
+      "SET TRANSACTION"
+    ],
+    a: 2,
+    exp: "El comando `COMMIT` se utiliza para confirmar y hacer permanentes todas las modificaciones de datos realizadas durante una transacción."
+  },
+  {
+    q: "¿Qué comando de TCL se utiliza para deshacer todas las modificaciones de datos realizadas desde el último `COMMIT` o `ROLLBACK`?",
+    opts: [
+      "SAVEPOINT",
+      "ROLLBACK",
+      "RELEASE",
+      "SET TRANSACTION"
+    ],
+    a: 1,
+    exp: "El comando `ROLLBACK` se utiliza para deshacer o revertir todas las modificaciones de datos realizadas desde que comenzó la transacción o desde el último `SAVEPOINT`."
+  },
+  {
+    q: "¿Cuál de las siguientes versiones de SQL introdujo las características de XML?",
+    opts: [
+      "SQL-92",
+      "SQL/1999",
+      "SQL/2003",
+      "SQL/2008"
+    ],
+    a: 2,
+    exp: "El documento menciona que SQL/2003 introdujo nuevas características, incluyendo las relacionadas con XML y cambios en las funciones."
+  },
+  {
+    q: "¿Qué cláusula se utiliza en una consulta para especificar la tabla o tablas sobre las que se quiere seleccionar registros?",
+    opts: [
+      "SELECT",
+      "FROM",
+      "WHERE",
+      "ORDER BY"
+    ],
+    a: 1,
+    exp: "La cláusula `FROM` especifica la tabla o tablas de las que se quieren seleccionar los registros, y es obligatoria en las consultas de selección."
+  },
+  {
+    q: "En una combinación externa (OUTER JOIN), ¿cuál de los tipos de JOIN muestra todos los valores de la segunda tabla, incluso si no cumplen la condición?",
+    opts: [
+      "INNER JOIN",
+      "LEFT JOIN",
+      "RIGHT JOIN",
+      "CROSS JOIN"
+    ],
+    a: 2,
+    exp: "La combinación `RIGHT JOIN` (o `RIGHT OUTER JOIN`) muestra todos los valores de la segunda tabla, incluso si no tienen un registro relacionado en la primera tabla."
+  },
+  {
+    q: "¿Qué restricción se utiliza para designar el campo como clave principal de una tabla, asegurando la unicidad y la no nulidad?",
+    opts: [
+      "UNIQUE",
+      "FOREIGN KEY",
+      "NOT NULL",
+      "PRIMARY KEY"
+    ],
+    a: 3,
+    exp: "La restricción `PRIMARY KEY` designa la clave principal de la tabla. Sus valores deben ser únicos (`UNIQUE`) y no pueden ser nulos (`NOT NULL`)."
+  },
+  {
+    q: "¿Qué tipo de dato, según el documento, está en proceso de ser retirado en futuras versiones de SQL?",
+    opts: [
+      "INT",
+      "TEXT",
+      "VARCHAR",
+      "DATE"
+    ],
+    a: 1,
+    exp: "El documento indica que los tipos de datos como `ntext`, `text` e `image` se espera que se retiren en una versión futura de SQL."
+  },
+  {
+    q: "¿Qué es un 'procedimiento almacenado'?",
+    opts: [
+      "Una función de agregado.",
+      "Un tipo de dato.",
+      "Un conjunto de instrucciones SQL y sentencias de control.",
+      "Una cláusula de consulta."
+    ],
+    a: 2,
+    exp: "Según el documento, un procedimiento almacenado es un conjunto de instrucciones SQL precompiladas y sentencias de control que se almacenan en el SGBD y se ejecutan como una unidad."
+  },
+  {
+    q: "¿Qué comando de DDL se utiliza para modificar la estructura de una tabla existente?",
+    opts: [
+      "CREATE TABLE",
+      "DROP TABLE",
+      "ALTER TABLE",
+      "RENAME TABLE"
+    ],
+    a: 2,
+    exp: "El comando `ALTER TABLE` es parte del DDL (Lenguaje de Definición de Datos) y se utiliza para agregar, modificar o eliminar columnas de una tabla."
+  },
+  {
+    q: "¿Qué son los 'triggers'?",
+    opts: [
+      "Funciones de agregado.",
+      "Procedimientos que se ejecutan automáticamente en respuesta a eventos específicos en la base de datos.",
+      "Restricciones de datos.",
+      "Un tipo de dato numérico."
+    ],
+    a: 1,
+    exp: "El documento menciona los 'disparadores' o 'triggers' como procedimientos que se ejecutan automáticamente en respuesta a eventos como `INSERT`, `UPDATE` o `DELETE`."
+  },
+  {
+    q: "¿Qué comando de DCL se utiliza para otorgar permisos a un usuario en la base de datos?",
+    opts: [
+      "GRANT",
+      "REVOKE",
+      "CREATE USER",
+      "ALTER USER"
+    ],
+    a: 0,
+    exp: "El comando `GRANT` se utiliza para conceder privilegios a los usuarios sobre los objetos de la base de datos."
+  },
+  {
+    q: "¿Qué comando de DCL se utiliza para revocar permisos a un usuario en la base de datos?",
+    opts: [
+      "REVOKE",
+      "GRANT",
+      "DELETE USER",
+      "DROP USER"
+    ],
+    a: 0,
+    exp: "El comando `REVOKE` se utiliza para retirar los permisos o privilegios que se han concedido previamente a un usuario o rol."
+  },
+  {
+    q: "¿Qué es una clave foránea (FOREIGN KEY)?",
+    opts: [
+      "Un campo que identifica de forma única cada registro en una tabla.",
+      "Una restricción que asegura que todos los valores en una columna sean distintos.",
+      "Un campo que crea una relación con la clave primaria de otra tabla.",
+      "Un tipo de dato numérico."
+    ],
+    a: 2,
+    exp: "Una clave foránea es un campo que indica una relación con otra tabla, donde sus valores deben existir en la clave primaria de la tabla a la que hace referencia, asegurando la integridad referencial."
+  },
+  {
+    q: "¿Cuál es el orden correcto de las cláusulas en una sentencia `SELECT`?",
+    opts: [
+      "SELECT, WHERE, FROM, GROUP BY, ORDER BY, HAVING",
+      "FROM, SELECT, WHERE, GROUP BY, HAVING, ORDER BY",
+      "SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY",
+      "WHERE, FROM, SELECT, HAVING, GROUP BY, ORDER BY"
+    ],
+    a: 2,
+    exp: "Según la sección 'SINTAXIS SQL Y SU PRECEDENCIA', el orden correcto es: `FROM/JOIN`, `WHERE`, `GROUP BY`, `HAVING`, `SELECT`, y `ORDER BY`."
+  },
+  {
+    q: "¿Qué tipo de dato numérico en SQL se utiliza para almacenar valores exactos con decimales?",
+    opts: [
+      "INT",
+      "DECIMAL",
+      "FLOAT",
+      "REAL"
+    ],
+    a: 1,
+    exp: "El documento menciona el tipo de dato `DECIMAL` para almacenar valores numéricos exactos con decimales, mientras que `FLOAT` y `REAL` son para valores aproximados."
+  }
+];
+
+// --- Render de todas las preguntas a la vez ---
+const quiz = document.getElementById('quiz');
+const totalEl = document.getElementById('total');
+const answeredEl = document.getElementById('answered');
+const scoreEl = document.getElementById('score');
+const correctsEl = document.getElementById('corrects');
+const liveEl = document.getElementById('live');
+const bar = document.getElementById('bar');
+
+let score = 0;
+let answered = 0;
+
+function updateHud(){
+  const total = QUESTIONS.length;
+  totalEl.textContent = total;
+  answeredEl.textContent = answered;
+  scoreEl.textContent = score;
+  correctsEl.textContent = score;
+  const pct = total ? Math.round((score/total)*100) : 0;
+  liveEl.textContent = pct;
+  bar.style.width = `${Math.min(100, (answered/total)*100)}%`;
+}
+
+function makeQuestionCard(qobj, index){
+  const wrapper = document.createElement('article');
+  wrapper.className = 'card';
+
+  const q = document.createElement('div');
+  q.className = 'q';
+  q.innerHTML = (index+1) + '. ' + qobj.q;
+  wrapper.appendChild(q);
+
+  const opts = document.createElement('div');
+  opts.className = 'opts';
+
+  qobj.opts.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = text;
+    btn.addEventListener('click', () => handleAnswer(btn, i, qobj));
+    opts.appendChild(btn);
+  });
+
+  const fb = document.createElement('div');
+  fb.className = 'explain';
+  fb.id = 'fb-' + index;
+
+  wrapper.appendChild(opts);
+  wrapper.appendChild(fb);
+
+  return wrapper;
+}
+
+function handleAnswer(button, selectedIdx, qobj){
+  if (button.parentElement.dataset.locked === '1') return; // ya corregida
+
+  const buttons = Array.from(button.parentElement.querySelectorAll('.opt'));
+  buttons.forEach(b => b.disabled = true);
+
+  const correct = qobj.a;
+  if (selectedIdx === correct){
+    button.classList.add('correct');
+    score++;
+    setFeedback(button, `✔️ ¡Correcto! ${qobj.exp || ''}`);
+  } else {
+    button.classList.add('wrong');
+    buttons[correct].classList.add('correct');
+    setFeedback(button, `❌ No es correcto. Respuesta correcta: <strong>${buttons[correct].textContent}</strong>. ${qobj.exp || ''}`);
+  }
+
+  answered++;
+  button.parentElement.dataset.locked = '1';
+  updateHud();
+}
+
+function setFeedback(button, html){
+  const fb = button.parentElement.parentElement.querySelector('.explain');
+  fb.innerHTML = html;
+}
+
+function resetAll(){
+  score = 0;
+  answered = 0;
+  // limpiar y volver a renderizar
+  quiz.innerHTML = '';
+  QUESTIONS.forEach((q, i) => quiz.appendChild(makeQuestionCard(q, i)));
+  updateHud();
+}
+
+document.getElementById('btnReset').addEventListener('click', resetAll);
+
+// Inicializar
+resetAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bloque 3 – Tema 2</title>
+  <style>
+    :root{
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --right: #16a34a;
+      --wrong: #dc2626;
+      --btn: #1f2937;
+      --btn-hover: #374151;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans";
+      background: radial-gradient(1200px 800px at 20% 0%, #0b1220, var(--bg)); color: var(--text); min-height: 100vh; }
+    header { position: sticky; top: 0; background: rgba(15,23,42,.7); backdrop-filter: blur(6px); border-bottom: 1px solid rgba(255,255,255,.08); padding: 12px 16px; z-index: 10; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 18px; }
+    h1 { margin: 0; font-size: clamp(22px, 3.5vw, 34px); } .sub { color: var(--muted); }
+    .board { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .pill { font-size: 13px; color: var(--muted); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); }
+    .btn { background: linear-gradient(180deg,#111827,#0b1220); color: var(--text); border: 1px solid rgba(255,255,255,.1); padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: transform .06s ease, filter .2s ease; }
+    .btn:hover { filter: brightness(1.1); } .btn:active { transform: translateY(1px); }
+    .grid { display: grid; gap: 16px; } .card { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 18px; }
+    .q { font-size: clamp(16px, 2.2vw, 20px); line-height: 1.35; margin-bottom: 12px; } .opts { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 640px) { .opts { grid-template-columns: 1fr 1fr; } }
+    .opt { background: var(--btn); border: 1px solid rgba(255,255,255,.08); color: var(--text); padding: 12px 14px; border-radius: 12px; text-align: left; cursor: pointer; transition: transform .06s ease, background .2s; }
+    .opt:hover { background: var(--btn-hover); } .opt[disabled] { opacity: .9; cursor: not-allowed; }
+    .opt.correct { outline: 2px solid var(--right); box-shadow: 0 0 0 3px rgba(22,163,74,.2) inset; }
+    .opt.wrong { outline: 2px solid var(--wrong); box-shadow: 0 0 0 3px rgba(220,38,38,.2) inset; }
+    .explain { color: var(--muted); font-size: 14px; margin-top: 8px; min-height: 20px; }
+    .summary { margin: 18px 0 6px; } .footbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .progress { height: 10px; width: 100%; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+    .bar { height: 100%; width: 0; background: linear-gradient(90deg, #06b6d4, #22d3ee); transition: width .35s ease; }
+    footer { padding: 24px 16px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+<header><div class="container">
+  <h3>Bloque 3 – Tema 2</h3>
+  <div class="board">
+    <div class="pill">Respondidas: <span id="answered">0</span> / <span id="total">0</span></div>
+    <div class="pill">Puntos: <span id="score">0</span></div>
+    <div class="pill">Correctas: <span id="corrects">0</span></div>
+    <button id="btnReset" class="btn">Reiniciar</button>
+  </div>
+  <div class="progress" style="margin-top:10px"><div id="bar" class="bar"></div></div>
+</div></header>
+<main class="container"><section id="quiz" class="grid"></section><div class="summary"><div class="pill">Resultado en vivo: <strong><span id="live">0</span>%</strong></div></div></main>
+<footer>Cuestionario con 50 preguntas basadas en Tema 2. Fuente: Tema 2.pdf.</footer>
+
+<script>
+
+const QUESTIONS = [
+  {
+    "q": "¿Qué es un algoritmo según el documento?",
+    "opts": [
+      "Un programa que traduce instrucciones a lenguaje máquina.",
+      "Una sucesión de instrucciones ordenadas que representa un modelo de solución a un problema.",
+      "Un conjunto de códigos que un ordenador interpreta.",
+      "Una serie de datos que se almacenan en una base de datos."
+    ],
+    "a": 1,
+    "exp": "Un algoritmo es una sucesión de instrucciones ordenadas y bien definidas que representa un modelo de solución a un problema determinado."
+  },
+  {
+    "q": "¿Cómo se define un programa según Niklaus Wirth?",
+    "opts": [
+      "Un programa es la suma de algoritmos y estructuras de datos.",
+      "Un programa es un conjunto de instrucciones escritas en lenguaje máquina.",
+      "Un programa es la traducción de datos de entrada en datos de salida.",
+      "Un programa es un conjunto de algoritmos para una tarea específica."
+    ],
+    "a": 0,
+    "exp": "Según Niklaus Wirth, un programa está formado por algoritmos y estructuras de datos."
+  },
+  {
+    "q": "¿Qué tipo de lenguaje de programación se codifica como una sucesión de ceros y unos?",
+    "opts": [
+      "Lenguaje de alto nivel",
+      "Lenguaje de medio nivel",
+      "Lenguaje máquina",
+      "Lenguaje ensamblador"
+    ],
+    "a": 2,
+    "exp": "El lenguaje máquina fue el primer lenguaje de programación y las instrucciones se codifican como sucesiones de ceros y unos (bits), que es el único lenguaje que entiende el ordenador."
+  },
+  {
+    "q": "¿Cuál es una desventaja de los lenguajes de bajo nivel?",
+    "opts": [
+      "Ocupan mucho espacio en la memoria.",
+      "El tiempo de ejecución es lento.",
+      "Son independientes del procesador.",
+      "Requieren muchas instrucciones para operaciones simples."
+    ],
+    "a": 3,
+    "exp": "Una de las desventajas de los lenguajes de bajo nivel es que las operaciones son muy elementales, por lo que se requieren muchas instrucciones para realizar operaciones simples."
+  },
+  {
+    "q": "¿Cuál de los siguientes es un lenguaje de medio nivel?",
+    "opts": [
+      "Java",
+      "Python",
+      "C",
+      "SQL"
+    ],
+    "a": 2,
+    "exp": "El lenguaje C es considerado un lenguaje de medio nivel porque, siendo de alto nivel, utiliza propiedades de bajo nivel como acceder directamente a la memoria."
+  },
+  {
+    "q": "¿Cuál es uno de los objetivos de los lenguajes de alto nivel?",
+    "opts": [
+      "Depender directamente del hardware.",
+      "Acercarse al lenguaje humano para facilitar la vida al programador.",
+      "Ocupar el mínimo espacio en la memoria.",
+      "Ser traducidos por un ensamblador."
+    ],
+    "a": 1,
+    "exp": "Los lenguajes de alto nivel buscan la mayor abstracción posible, acercándose al lenguaje humano para facilitar el entendimiento y trabajo del programador."
+  },
+  {
+    "q": "¿Qué es un 'linker' (enlazador)?",
+    "opts": [
+      "Un programa que enlaza el código objeto con las bibliotecas para producir un ejecutable.",
+      "Un programa que traduce un lenguaje de alto nivel a otro de alto nivel.",
+      "Un programa que traduce un lenguaje de alto nivel a lenguaje máquina.",
+      "Un programa que depura errores en el código."
+    ],
+    "a": 0,
+    "exp": "Un linker es un programa que enlaza el código objeto con su(s) biblioteca(s) para producir finalmente un fichero ejecutable o una biblioteca."
+  },
+  {
+    "q": "¿Cuál es la diferencia principal entre un archivo objeto y un archivo ejecutable?",
+    "opts": [
+      "El archivo ejecutable se genera antes de la compilación.",
+      "El archivo objeto ya está en lenguaje comprensible para la máquina y el ejecutable no.",
+      "El archivo objeto solo se utiliza en lenguajes de bajo nivel.",
+      "Un ejecutable es una mezcla de un archivo objeto vinculándole un conjunto de librerías mediante un enlazador."
+    ],
+    "a": 3,
+    "exp": "La diferencia principal es que un archivo objeto se genera al compilar el código fuente, mientras que un ejecutable es una mezcla del archivo objeto vinculándole un conjunto de librerías mediante un enlazador."
+  },
+  {
+    "q": "¿Qué hace un programa 'intérprete'?",
+    "opts": [
+      "Traduce y ejecuta instrucción a instrucción un lenguaje de alto nivel a lenguaje máquina.",
+      "Convierte un programa fuente en un programa objeto.",
+      "Enlaza el código objeto con las bibliotecas.",
+      "Define las variables y constantes del programa."
+    ],
+    "a": 0,
+    "exp": "Un intérprete traduce de un lenguaje de alto nivel a lenguaje máquina, pero en lugar de generar un programa objeto, va traduciendo y ejecutando instrucción a instrucción."
+  },
+  {
+    "q": "En programación, ¿qué significa el concepto de 'abstracción'?",
+    "opts": [
+      "La capacidad de un programa de ejecutarse en diferentes ordenadores.",
+      "Una manera de ocultar los detalles de implementación de un objeto.",
+      "El proceso de traducción de un programa a lenguaje binario.",
+      "La habilidad para escribir código sin errores de sintaxis."
+    ],
+    "a": 1,
+    "exp": "La abstracción es una manera de ocultar los detalles de implementación de un objeto, de forma que se utiliza porque se sabe qué puede hacer, pero no es necesario saber cómo lo hace."
+  },
+  {
+    "q": "En el paradigma de programación imperativo, ¿cómo se ejecuta un programa?",
+    "opts": [
+      "Mediante el razonamiento lógico.",
+      "A través de funciones matemáticas.",
+      "Como un conjunto de instrucciones que se ejecutan una por una, de forma secuencial.",
+      "Por medio de eventos externos definidos por el usuario."
+    ],
+    "a": 2,
+    "exp": "El paradigma imperativo es un conjunto de instrucciones que se ejecutan una por una, de principio a fin, de modo secuencial, aunque el flujo puede ser modificado por instrucciones de salto o de control."
+  },
+  {
+    "q": "¿Qué paradigma solicita al programador que describa el problema en lugar de encontrar una solución?",
+    "opts": [
+      "Paradigma imperativo",
+      "Paradigma declarativo",
+      "Paradigma orientado a objetos",
+      "Paradigma orientado a aspectos"
+    ],
+    "a": 1,
+    "exp": "El paradigma declarativo solicita al programador que describa el problema en lugar de encontrar una solución."
+  },
+  {
+    "q": "Un programa que divide una aplicación en módulos independientes para una mejor separación de responsabilidades, ¿qué paradigma de programación utiliza?",
+    "opts": [
+      "Programación dirigida por eventos",
+      "Programación funcional",
+      "Programación imperativa",
+      "Programación orientada a aspectos (POA)"
+    ],
+    "a": 3,
+    "exp": "La programación orientada a aspectos (POA) permite una adecuada modularización de las aplicaciones y una mejor separación de responsabilidades, dividiendo el programa en módulos independientes."
+  },
+  {
+    "q": "¿Cuál de los siguientes no es un bloque de la estructura de un programa?",
+    "opts": [
+      "Entradas",
+      "Variables",
+      "Algoritmos de resolución",
+      "Salidas"
+    ],
+    "a": 1,
+    "exp": "Según el documento, un programador debe especificar tres bloques: Entradas, Algoritmos de resolución y Salidas."
+  },
+  {
+    "q": "¿Qué tipo de programa se interrumpe la secuencia mediante instrucciones de bifurcación?",
+    "opts": [
+      "Programa lineal",
+      "Programa secuencial",
+      "Programa procedimental",
+      "Programa no lineal"
+    ],
+    "a": 3,
+    "exp": "Un programa no lineal es aquel en el que se interrumpe la secuencia mediante instrucciones de bifurcación."
+  },
+  {
+    "q": "¿Cuál es la operación que consiste en asignar un valor a una variable?",
+    "opts": [
+      "Lectura",
+      "Asignación",
+      "Escritura",
+      "Bifurcación"
+    ],
+    "a": 1,
+    "exp": "La asignación consiste en asignar un valor a una variable."
+  },
+  {
+    "q": "¿Qué tipo de bifurcación se realiza siempre que el flujo del programa pase por la instrucción, sin necesidad del cumplimiento de ninguna condición?",
+    "opts": [
+      "Bifurcación incondicional",
+      "Bifurcación condicional",
+      "Bifurcación simple",
+      "Bifurcación de salto"
+    ],
+    "a": 0,
+    "exp": "La bifurcación incondicional se realiza siempre que el flujo del programa pase por la instrucción sin necesidad del cumplimiento de ninguna condición."
+  },
+  {
+    "q": "¿Qué es la sintaxis de un lenguaje de programación?",
+    "opts": [
+      "El conjunto de instrucciones que un programa realiza.",
+      "La forma en que se escriben los comentarios en el código.",
+      "Las reglas para que los elementos básicos de un programa se combinen.",
+      "El proceso de depuración del programa."
+    ],
+    "a": 2,
+    "exp": "La sintaxis del lenguaje son las reglas para que los elementos básicos de un programa se combinen. Solamente las instrucciones sintácticamente correctas pueden ser interpretadas por la computadora."
+  },
+  {
+    "q": "¿Cuál de los siguientes no es un elemento básico de un programa?",
+    "opts": [
+      "Palabras reservadas",
+      "Identificadores",
+      "Constantes",
+      "Bibliotecas"
+    ],
+    "a": 3,
+    "exp": "Los elementos básicos constitutivos de un programa o algoritmo son: Palabras reservadas, Identificadores, Caracteres especiales, Constantes, Variables, Expresiones e Instrucciones."
+  },
+  {
+    "q": "¿Qué tipo de dato representa solo dos valores, verdadero o falso?",
+    "opts": [
+      "Datos numéricos",
+      "Datos lógicos (booleanos)",
+      "Datos tipo carácter",
+      "Datos estructurados simples"
+    ],
+    "a": 1,
+    "exp": "Los datos lógicos o booleanos solo pueden representar dos valores, uno para verdadero y otro para falso."
+  },
+  {
+    "q": "¿Qué es una variable?",
+    "opts": [
+      "Un espacio de memoria principal del ordenador al que se puede asignar un valor que puede cambiar durante la ejecución del programa.",
+      "Un valor que no puede cambiar durante la ejecución del programa.",
+      "Un conjunto de instrucciones que se repiten un número determinado de veces.",
+      "Un elemento que solo puede tener un tipo de dato."
+    ],
+    "a": 0,
+    "exp": "Una variable es un espacio de memoria al que se le asigna un nombre y un tipo, y su valor puede cambiar durante la ejecución del programa."
+  },
+  {
+    "q": "¿En qué orden se ejecutan los operadores lógicos según las reglas de prioridad?",
+    "opts": [
+      "OR, AND, NOT",
+      "NOT, AND, OR",
+      "AND, OR, NOT",
+      "OR, NOT, AND"
+    ],
+    "a": 1,
+    "exp": "Las reglas de prioridad para los operadores lógicos son: 1. NOT, 2. AND, y 3. OR."
+  },
+  {
+    "q": "¿Qué permite a un programador modificar el flujo secuencial de un programa?",
+    "opts": [
+      "Estructuras de datos",
+      "Librerías externas",
+      "Abstracción",
+      "Estructuras de control de flujo"
+    ],
+    "a": 3,
+    "exp": "Las estructuras de control de flujo permiten que el flujo secuencial del programa sea modificado de un modo preciso y definido con anterioridad."
+  },
+  {
+    "q": "En las estructuras de control selectivas, ¿qué hace una estructura 'simple' (SI-ENTONCES)?",
+    "opts": [
+      "Ejecuta una acción si la condición es verdadera y no hace nada si es falsa.",
+      "Ejecuta una acción si la condición es verdadera y otra si es falsa.",
+      "Evalúa múltiples condiciones para elegir una acción.",
+      "Repite una acción hasta que la condición se cumple."
+    ],
+    "a": 0,
+    "exp": "La selección simple (si-entonces) evalúa la condición y, si es verdadera, ejecuta la acción, mientras que si es falsa, no hace nada."
+  },
+  {
+    "q": "Cuando hay más de dos opciones que escoger, ¿qué se recomienda para no tener problemas de legibilidad con las estructuras anidadas?",
+    "opts": [
+      "Utilizar el bucle `while`.",
+      "Usar el paradigma imperativo.",
+      "Emplear una estructura selectiva múltiple (según-sea, caso-de/case).",
+      "Dividir el problema en módulos."
+    ],
+    "a": 2,
+    "exp": "Cuando las alternativas son muchas, se recomienda el uso de la estructura selectiva múltiple (según-sea, caso-de/case) para evitar problemas de legibilidad que causan las estructuras anidadas."
+  },
+  {
+    "q": "¿Cómo se llama la acción o acciones que se repiten en un bucle?",
+    "opts": [
+      "Asignación",
+      "Iteración",
+      "Bifurcación",
+      "Sentencia"
+    ],
+    "a": 1,
+    "exp": "La acción o acciones que se repiten en un bucle se llama iteración."
+  },
+  {
+    "q": "En la estructura repetitiva `WHILE`, ¿qué puede ocurrir si la condición de parada se realiza al principio del bucle?",
+    "opts": [
+      "El bucle siempre se ejecutará al menos una vez.",
+      "El bucle se ejecutará exactamente 10 veces.",
+      "Se producirá un error de sintaxis.",
+      "El bucle puede no ejecutarse ninguna vez."
+    ],
+    "a": 3,
+    "exp": "En la estructura `WHILE`, si la condición de parada se realiza al principio del bucle, puede darse el caso de que el bucle no se ejecute ninguna vez."
+  },
+  {
+    "q": "A diferencia del bucle `WHILE`, ¿qué garantiza la estructura `REPEAT...UNTIL`?",
+    "opts": [
+      "El bucle se ejecuta como mínimo una vez.",
+      "El bucle no se ejecuta ninguna vez si la condición es inicialmente falsa.",
+      "La condición de salida se basa en un contador.",
+      "El bucle siempre es más rápido que el bucle `WHILE`."
+    ],
+    "a": 0,
+    "exp": "La principal diferencia es que el bucle `REPEAT...UNTIL` siempre se ejecuta por lo menos una vez, mientras que `WHILE` puede no ejecutarse ninguna vez si la expresión booleana es inicialmente falsa."
+  },
+  {
+    "q": "En una estructura `FOR`, ¿qué elementos se deben indicar?",
+    "opts": [
+      "Solo un valor de entrada y un incremento.",
+      "Únicamente una condición y una instrucción.",
+      "Un valor de entrada, una condición y un incremento o decremento.",
+      "Un valor de entrada, una salida y un proceso."
+    ],
+    "a": 2,
+    "exp": "En el bucle `FOR` hay que indicar un valor de entrada, una condición y un incremento o decremento."
+  },
+  {
+    "q": "El lenguaje de programación C++ es un lenguaje:",
+    "opts": [
+      "Solo orientado a objetos.",
+      "Multiparadigma.",
+      "Solo estructurado.",
+      "Solo imperativo."
+    ],
+    "a": 1,
+    "exp": "El C++ es un lenguaje de programación multiparadigma, ya que combina la programación estructurada y la programación orientada a objetos."
+  },
+  {
+    "q": "¿Qué característica principal diferencia a Python de otros lenguajes de programación en cuanto a la declaración de bloques de código?",
+    "opts": [
+      "Utiliza llaves `{}` para declarar los bloques.",
+      "Utiliza un punto y coma `;` para indicar el final de una instrucción.",
+      "Utiliza `END` para cerrar un bloque de código.",
+      "Utiliza la indentación (sangría) para declarar los bloques."
+    ],
+    "a": 3,
+    "exp": "Python se diferencia de otros lenguajes en que utiliza la indentación (sangría) para declarar los bloques de código, mejorando la legibilidad."
+  },
+  {
+    "q": "En Python, ¿qué se usa para declarar una lista?",
+    "opts": [
+      "Paréntesis `()`",
+      "Corchetes `[]`",
+      "Apóstrofos `''`",
+      "Llaves `{}`"
+    ],
+    "a": 1,
+    "exp": "Para declarar una lista en Python se usan los corchetes `[]`."
+  },
+  {
+    "q": "Una lista en Python se caracteriza por ser:",
+    "opts": [
+      "Mutable.",
+      "Inmutable.",
+      "De cantidad fija.",
+      "Con elementos del mismo tipo."
+    ],
+    "a": 0,
+    "exp": "Las listas en Python se caracterizan por ser mutables, lo que significa que se puede cambiar su contenido en tiempo de ejecución."
+  },
+  {
+    "q": "¿Cómo se accede al primer elemento de una lista o tupla en Python?",
+    "opts": [
+      "Con el índice `1`.",
+      "Con el índice `-1`.",
+      "Con el índice `A`.",
+      "Con el índice `0`."
+    ],
+    "a": 3,
+    "exp": "Para acceder a los elementos de una lista o tupla en Python se utiliza un índice entero que empieza por `0`."
+  },
+  {
+    "q": "Según el documento, ¿qué es un Chatbot?",
+    "opts": [
+      "Un tipo de lenguaje de bajo nivel.",
+      "Una extensión de la biblioteca de Python.",
+      "Un programa de inteligencia artificial que simula una conversación humana.",
+      "Un conjunto de librerías para bases de datos."
+    ],
+    "a": 2,
+    "exp": "Un Chatbot es un programa de inteligencia artificial capaz de simular una conversación con un usuario en lenguaje natural, como si se tratara de un ser humano."
+  },
+  {
+    "q": "Según el documento, ¿para qué se utiliza normalmente el lenguaje ensamblador?",
+    "opts": [
+      "Para crear sistemas operativos.",
+      "Para programar los drivers (controladores) de los elementos de hardware.",
+      "Para aplicaciones web portátiles.",
+      "Para crear modelos personalizados de aprendizaje automático."
+    ],
+    "a": 1,
+    "exp": "Normalmente se utiliza el lenguaje ensamblador para programar los drivers (controladores) de los diferentes elementos de hardware del ordenador."
+  },
+  {
+    "q": "¿Qué es la recursividad en programación?",
+    "opts": [
+      "Una técnica que divide un problema en subproblemas más pequeños.",
+      "Un proceso de depuración de errores.",
+      "Una técnica donde una función se llama a sí misma para resolver un problema.",
+      "Una forma de ocultar los detalles de implementación de un objeto."
+    ],
+    "a": 2,
+    "exp": "La recursividad es una técnica donde una función se llama a sí misma."
+  },
+  {
+    "q": "¿Qué es ADOdb?",
+    "opts": [
+      "Un conjunto de bibliotecas de bases de datos para PHP y Python.",
+      "Un framework de programación para iOS.",
+      "Un lenguaje de programación orientado a objetos.",
+      "Una extensión de SQL Server."
+    ],
+    "a": 0,
+    "exp": "ADOdb es un conjunto de bibliotecas de bases de datos para PHP y Python que permite desarrollar aplicaciones web de manera portable."
+  },
+  {
+    "q": "¿Qué es un lenguaje de programación multiparadigma?",
+    "opts": [
+      "Un lenguaje que solo utiliza el paradigma imperativo y funcional.",
+      "Un lenguaje que depende de un solo paradigma de programación.",
+      "Un lenguaje que utiliza más de un paradigma de programación.",
+      "Un lenguaje que solo utiliza el paradigma orientado a objetos."
+    ],
+    "a": 2,
+    "exp": "Un lenguaje multiparadigma es aquel que utiliza más de un paradigma de programación."
+  },
+  {
+    "q": "¿Qué es el control de flujo en la programación?",
+    "opts": [
+      "El proceso de entrada y salida de datos.",
+      "El orden en que se ejecutan las sentencias en un programa.",
+      "La técnica de modularización de las aplicaciones.",
+      "La forma en que se nombran las variables."
+    ],
+    "a": 1,
+    "exp": "El control de flujo se refiere al orden en que se ejecutan las sentencias en un programa."
+  },
+  {
+    "q": "¿Qué paradigma de programación guarda analogía con la vida real y se basa en el diseño de objetos?",
+    "opts": [
+      "Paradigma imperativo",
+      "Paradigma declarativo",
+      "Paradigma funcional",
+      "Paradigma orientado a objetos"
+    ],
+    "a": 3,
+    "exp": "El enfoque orientado a objetos guarda analogía con la vida real y se basa en el diseño y construcción de objetos."
+  },
+  {
+    "q": "¿Qué es un lenguaje de programación de cuarta generación según el documento?",
+    "opts": [
+      "Lenguaje Natural (PLN).",
+      "Lenguaje de bajo nivel.",
+      "Lenguaje ensamblador.",
+      "Lenguaje de alto nivel."
+    ],
+    "a": 0,
+    "exp": "El documento menciona que los lenguajes naturales (PLN) son de cuarta generación de Software AG."
+  },
+  {
+    "q": "Según el documento, ¿qué ocurre si un programa contiene errores de sintaxis?",
+    "opts": [
+      "Se detiene la ejecución del programa, pero no se rechaza.",
+      "Se ejecuta el programa, pero con resultados inesperados.",
+      "El programa es rechazado por la máquina.",
+      "El compilador los corrige automáticamente."
+    ],
+    "a": 2,
+    "exp": "Los programas que contengan errores de sintaxis son rechazados por la máquina, ya que solo las instrucciones sintácticamente correctas pueden ser interpretadas."
+  },
+  {
+    "q": "¿Cuál es la principal diferencia entre funciones y procedimientos?",
+    "opts": [
+      "Las funciones no tienen parámetros y los procedimientos sí.",
+      "Las funciones devuelven un valor y los procedimientos no.",
+      "Los procedimientos son de alto nivel y las funciones de bajo nivel.",
+      "Las funciones se declaran y los procedimientos no."
+    ],
+    "a": 1,
+    "exp": "La diferencia entre funciones y procedimientos es que las funciones devuelven un valor y los procedimientos no."
+  },
+  {
+    "q": "¿Cuál es la técnica que se utiliza para resolver un problema complejo dividiéndolo en subproblemas más sencillos?",
+    "opts": [
+      "Programación imperativa",
+      "Recursividad",
+      "Control de flujo",
+      "Técnica 'Divide y Vencerás'"
+    ],
+    "a": 3,
+    "exp": "La técnica 'Divide y Vencerás' se utiliza para resolver un problema dividiéndolo en subproblemas más pequeños."
+  },
+  {
+    "q": "¿Cómo se llama el proceso de introducir datos en la memoria del ordenador?",
+    "opts": [
+      "Entradas",
+      "Algoritmos de resolución",
+      "Salidas",
+      "Abstracción"
+    ],
+    "a": 0,
+    "exp": "Las entradas es el proceso de introducir la información de entrada (datos) en la memoria del ordenador, operación de lectura o acción de leer."
+  },
+  {
+    "q": "¿Cuál de los siguientes es un ejemplo de lenguaje imperativo?",
+    "opts": [
+      "Prolog",
+      "Lisp",
+      "C",
+      "Smalltalk"
+    ],
+    "a": 2,
+    "exp": "Ejemplos de lenguajes imperativos son COBOL, PASCAL, C, Ada y FORTRAN."
+  },
+  {
+    "q": "¿Qué significa la palabra 'assembler' en relación a los traductores de programas?",
+    "opts": [
+      "Es el nombre del primer lenguaje de alto nivel.",
+      "Fue el primer lenguaje traductor que traducía el lenguaje de programación Assembly.",
+      "Es sinónimo de 'linker'.",
+      "Se refiere a un lenguaje de programación de medio nivel."
+    ],
+    "a": 1,
+    "exp": "El primer lenguaje traductor fue el 'assembler', que traducía el lenguaje de programación Assembly (lenguaje de bajo nivel) en lenguaje máquina."
+  },
+  {
+    "q": "¿Qué es la indentación o sangría en el código?",
+    "opts": [
+      "Un tipo de variable.",
+      "Una forma de comentar el código.",
+      "El proceso de depurar un programa.",
+      "Mover un bloque de texto hacia la derecha para mejorar la legibilidad."
+    ],
+    "a": 3,
+    "exp": "El término indentación (o 'sangrado') significa mover un bloque de texto hacia la derecha insertando espacios o tabuladores para así separarlo del margen izquierdo y distinguirlo mejor."
+  },
+  {
+    "q": "En el paradigma de programación funcional, ¿de qué se componen los programas?",
+    "opts": [
+      "De funciones más matemáticas que reciben datos de entrada y devuelven un valor de salida.",
+      "De una secuencia de instrucciones que cambian de estado.",
+      "De un conjunto de datos y las operaciones vinculadas a ellos.",
+      "De eventos externos definidos por el usuario."
+    ],
+    "a": 0,
+    "exp": "En el paradigma funcional, los programas se componen de funciones más matemáticas, es decir, implementaciones de comportamiento que reciben un conjunto de datos de entrada y devuelven un valor de salida."
+  }
+];
+
+
+
+
+
+const quiz = document.getElementById('quiz');
+const totalEl = document.getElementById('total');
+const answeredEl = document.getElementById('answered');
+const scoreEl = document.getElementById('score');
+const correctsEl = document.getElementById('corrects');
+const liveEl = document.getElementById('live');
+const bar = document.getElementById('bar');
+
+let score = 0;
+let answered = 0;
+
+function updateHud() {
+  const total = QUESTIONS.length;
+  totalEl.textContent = total;
+  answeredEl.textContent = answered;
+  scoreEl.textContent = score;
+  correctsEl.textContent = score;
+  const pct = total ? Math.round((score/total)*100) : 0;
+  liveEl.textContent = pct;
+  bar.style.width = Math.min(100, (answered/total)*100) + '%';
+}
+
+function makeQuestionCard(qobj, index) {
+  const wrapper = document.createElement('article');
+  wrapper.className = 'card';
+
+  const q = document.createElement('div');
+  q.className = 'q';
+  q.innerHTML = (index+1) + '. ' + qobj.q;
+  wrapper.appendChild(q);
+
+  const opts = document.createElement('div');
+  opts.className = 'opts';
+
+  qobj.opts.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = text;
+    btn.addEventListener('click', () => handleAnswer(btn, i, qobj));
+    opts.appendChild(btn);
+  });
+
+  const fb = document.createElement('div');
+  fb.className = 'explain';
+
+  wrapper.appendChild(opts);
+  wrapper.appendChild(fb);
+
+  return wrapper;
+}
+
+function handleAnswer(button, selectedIdx, qobj) {
+  if (button.parentElement.dataset.locked === '1') return;
+
+  const buttons = Array.from(button.parentElement.querySelectorAll('.opt'));
+  buttons.forEach(b => b.disabled = true);
+
+  const correct = qobj.a;
+  if (selectedIdx === correct) {
+    button.classList.add('correct');
+    score++;
+    setFeedback(button, "✔️ ¡Correcto! " + (qobj.exp || ""));
+  } else {
+    button.classList.add('wrong');
+    buttons[correct].classList.add('correct');
+    setFeedback(button, "❌ No es correcto. Respuesta correcta: <strong>" + buttons[correct].textContent + "</strong>. " + (qobj.exp || ""));
+  }
+
+  answered++;
+  button.parentElement.dataset.locked = '1';
+  updateHud();
+}
+
+function setFeedback(button, html) {
+  const fb = button.parentElement.parentElement.querySelector('.explain');
+  fb.innerHTML = html;
+}
+
+function resetAll() {
+  score = 0;
+  answered = 0;
+  quiz.innerHTML = '';
+  QUESTIONS.forEach((q, i) => quiz.appendChild(makeQuestionCard(q, i)));
+  updateHud();
+}
+
+document.getElementById('btnReset').addEventListener('click', resetAll);
+resetAll();
+</script>
+</body>
+</html>

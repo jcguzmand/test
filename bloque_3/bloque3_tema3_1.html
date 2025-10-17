@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bloque 3 – Tema 3 (SQL)</title>
+  <style>
+    :root{
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --right: #16a34a;
+      --wrong: #dc2626;
+      --btn: #1f2937;
+      --btn-hover: #374151;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% 0%, #0b1220, var(--bg)); color: var(--text); min-height: 100vh; }
+    header { position: sticky; top: 0; background: rgba(15,23,42,.7); backdrop-filter: blur(6px); border-bottom: 1px solid rgba(255,255,255,.08); padding: 12px 16px; z-index: 10; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 18px; }
+    h1 { margin: 0; font-size: clamp(22px, 3.5vw, 34px); } .sub { color: var(--muted); }
+    .board { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .pill { font-size: 13px; color: var(--muted); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); }
+    .btn { background: linear-gradient(180deg,#111827,#0b1220); color: var(--text); border: 1px solid rgba(255,255,255,.1); padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: transform .06s ease, filter .2s ease; }
+    .btn:hover { filter: brightness(1.1); } .btn:active { transform: translateY(1px); }
+    .grid { display: grid; gap: 16px; } .card { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 18px; }
+    .q { font-size: clamp(16px, 2.2vw, 20px); line-height: 1.35; margin-bottom: 12px; } .opts { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 640px) { .opts { grid-template-columns: 1fr 1fr; } }
+    .opt { background: var(--btn); border: 1px solid rgba(255,255,255,.08); color: var(--text); padding: 12px 14px; border-radius: 12px; text-align: left; cursor: pointer; transition: transform .06s ease, background .2s; }
+    .opt:hover { background: var(--btn-hover); } .opt[disabled] { opacity: .9; cursor: not-allowed; }
+    .opt.correct { outline: 2px solid var(--right); box-shadow: 0 0 0 3px rgba(22,163,74,.2) inset; }
+    .opt.wrong { outline: 2px solid var(--wrong); box-shadow: 0 0 0 3px rgba(220,38,38,.2) inset; }
+    .explain { color: var(--muted); font-size: 14px; margin-top: 8px; min-height: 20px; }
+    .summary { margin: 18px 0 6px; } .footbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .progress { height: 10px; width: 100%; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+    .bar { height: 100%; width: 0; background: linear-gradient(90deg, #06b6d4, #22d3ee); transition: width .35s ease; }
+    footer { padding: 24px 16px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+<header><div class="container">
+  <h1>Bloque 3 – Tema 3 (SQL)</h1>
+  <div class="board">
+    <div class="pill">Respondidas: <span id="answered">0</span> / <span id="total">0</span></div>
+    <div class="pill">Puntos: <span id="score">0</span></div>
+    <div class="pill">Correctas: <span id="corrects">0</span></div>
+    <button id="btnReset" class="btn">Reiniciar</button>
+  </div>
+  <div class="progress" style="margin-top:10px"><div id="bar" class="bar"></div></div>
+</div></header>
+<main class="container"><section id="quiz" class="grid"></section><div class="summary"><div class="pill">Resultado en vivo: <strong><span id="live">0</span>%</strong></div></div></main>
+<footer>Cuestionario con 50 preguntas SQL. Haz clic en cada opción para autocorregir.</footer>
+
+<script>
+const QUESTIONS = [{"q": "¿Qué sublenguajes principales define ANSI SQL?", "opts": ["DDL, DML y DCL", "HTML, CSS y JS", "OLTP, OLAP y ETL", "CRUD, REST y RPC"], "a": 0, "exp": "ANSI SQL distingue Data Definition (DDL), Data Manipulation (DML) y Data Control (DCL)."}, {"q": "¿Cuál es la diferencia entre WHERE y HAVING?", "opts": ["WHERE filtra grupos y HAVING filas", "WHERE se usa con agregados y HAVING sin agregados", "WHERE filtra filas y HAVING filtra grupos tras agrupar", "No hay diferencia"], "a": 2, "exp": "WHERE actúa sobre filas; HAVING actúa sobre grupos definidos con GROUP BY."}, {"q": "¿Qué hace UNION frente a UNION ALL?", "opts": ["UNION elimina duplicados; UNION ALL mantiene duplicados", "UNION es más rápido", "Ambas eliminan duplicados", "UNION ALL ordena los resultados"], "a": 0, "exp": "UNION devuelve filas distintas; UNION ALL incluye duplicadas y suele ser más rápido."}, {"q": "INNER JOIN devuelve…", "opts": ["Todas las filas de ambas tablas", "Solo filas que cumplen la condición de unión", "Solo filas de la izquierda", "Solo filas de la derecha"], "a": 1, "exp": "INNER JOIN selecciona las filas presentes en ambas tablas que satisfacen la condición."}, {"q": "LEFT JOIN garantiza que en el resultado aparezcan…", "opts": ["Todas las filas de la derecha", "Únicamente coincidencias", "Todas las filas de la izquierda", "Ninguna fila si no hay coincidencias"], "a": 2, "exp": "LEFT JOIN devuelve todas las filas de la tabla izquierda y las coincidentes de la derecha."}, {"q": "¿Qué describe mejor CROSS JOIN?", "opts": ["Elimina duplicados", "Producto cartesiano de ambas tablas", "Filtra por llave primaria", "Crea una vista"], "a": 1, "exp": "CROSS JOIN produce el producto cartesiano de las filas de las dos tablas."}, {"q": "¿Cuál de estas sentencias NO modifica datos?", "opts": ["INSERT", "UPDATE", "DELETE", "SELECT"], "a": 3, "exp": "SELECT consulta datos; INSERT/UPDATE/DELETE son consultas de acción (modifican)."}, {"q": "En INSERT, ¿qué regla es correcta?", "opts": ["Puede insertar en varias tablas a la vez", "Debe coincidir el nº de columnas y valores", "No verifica restricciones", "Ignora valores por defecto"], "a": 1, "exp": "INSERT requiere correspondencia entre columnas y valores y respeta restricciones/valores por defecto."}, {"q": "MERGE permite…", "opts": ["Combinar SELECT y ORDER en una sola sentencia", "Insertar/Actualizar/Borrar en destino según coincidencias", "Crear índices automáticamente", "Cambiar tipos de datos"], "a": 1, "exp": "MERGE coordina INSERT/UPDATE/DELETE sobre una tabla destino según una fuente."}, {"q": "¿Qué significa DCL?", "opts": ["Data Compute Language", "Data Control Language", "Database Core Library", "Data Cursor Language"], "a": 1, "exp": "DCL gestiona permisos (GRANT/REVOKE) y seguridad de acceso."}, {"q": "GRANT sirve para…", "opts": ["Eliminar usuarios", "Dar permisos como SELECT/INSERT/UPDATE/DELETE", "Crear disparadores", "Optimizar consultas"], "a": 1, "exp": "GRANT asigna permisos (p. ej., SELECT/INSERT/UPDATE/DELETE) sobre objetos."}, {"q": "REVOKE sirve para…", "opts": ["Auditar transacciones", "Revocar permisos previamente concedidos", "Crear vistas", "Hacer copia de seguridad"], "a": 1, "exp": "REVOKE elimina permisos que antes se concedieron con GRANT."}, {"q": "¿Qué sublenguaje gestiona transacciones?", "opts": ["DDL", "DML", "DCL", "TCL"], "a": 3, "exp": "TCL (Transaction Control Language) controla transacciones: COMMIT, ROLLBACK, SAVEPOINT…"}, {"q": "Selecciona la opción que NO es propiedad ACID", "opts": ["Atomicidad", "Consistencia", "Independencia", "Durabilidad"], "a": 2, "exp": "Las propiedades ACID son: Atomicidad, Consistencia, Aislamiento y Durabilidad."}, {"q": "COMMIT…", "opts": ["Revierte los cambios", "Confirma y hace permanentes los cambios", "Crea un punto de guardado", "Bloquea la tabla"], "a": 1, "exp": "COMMIT confirma una transacción y persiste los cambios."}, {"q": "ROLLBACK…", "opts": ["Confirma cambios", "Cierra la sesión", "Revierte cambios hasta el inicio o hasta un SAVEPOINT", "Crea índices"], "a": 2, "exp": "ROLLBACK deshace cambios de la transacción (total o hasta un punto de guardado)."}, {"q": "SAVEPOINT permite…", "opts": ["Crear una copia de la base de datos", "Marcar un punto para un posible ROLLBACK parcial", "Cambiar el aislamiento de la transacción", "Bloquear filas"], "a": 1, "exp": "SAVEPOINT define puntos intermedios a los que se puede revertir."}, {"q": "El tipo tinyint almacena…", "opts": ["Enteros de –32k a 32k", "Solo 0 y 1", "Valores 0–255", "Hasta 9 trillones"], "a": 2, "exp": "tinyint suele abarcar el rango 0–255."}, {"q": "¿Cuál es correcta sobre datetime y smalldatetime?", "opts": ["smalldatetime tiene mayor rango que datetime", "datetime2 tiene menos precisión que datetime", "smalldatetime redondea segundos y tiene rango menor", "datetime no admite horas"], "a": 2, "exp": "smalldatetime no guarda fracciones de segundo, redondea y su rango es menor."}, {"q": "timestamp (SQL Server) se usa para…", "opts": ["Guardar fecha de cumpleaños", "Marca binaria/versión de fila del sistema", "Zona horaria del usuario", "Duración de transacción"], "a": 1, "exp": "timestamp/rowversion captura una marca del sistema asociada a la fila."}, {"q": "¿Qué comodines se usan con LIKE?", "opts": ["% y _", "* y ? (siempre)", "{} y []", "<> y !="], "a": 0, "exp": "En SQL estándar, % para múltiples caracteres y _ para un solo carácter; [] define rangos en algunos SGBD."}, {"q": "Selecciona el operador aritmético válido en SQL", "opts": ["** (potencia)", "% (módulo)", "// (división entera)", "@@ (concat)"], "a": 1, "exp": "Entre los operadores básicos: +, -, *, / y % (módulo)."}, {"q": "Orden típico de evaluación/sintaxis en una consulta", "opts": ["SELECT → WHERE → GROUP BY → ORDER BY", "FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY", "WHERE → SELECT → ORDER BY", "ORDER BY → SELECT → FROM"], "a": 1, "exp": "Orden lógico: FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY."}, {"q": "COUNT(*)…", "opts": ["Ignora nulos y duplicados", "Cuenta todas las filas incluidas nulas y duplicadas", "Solo funciona con DISTINCT", "Requiere GROUP BY"], "a": 1, "exp": "COUNT(*) cuenta filas, no columnas; incluye duplicados y filas con valores NULL."}, {"q": "SQL interactivo se caracteriza por…", "opts": ["El SGBD ejecuta sentencias escritas directamente por el usuario", "Siempre requiere precompilación", "No sirve para prototipos", "No se usa en administración"], "a": 0, "exp": "El SQL interactivo permite escribir y ejecutar órdenes directamente."}, {"q": "SQL embebido (estático) en un lenguaje host…", "opts": ["No admite variables", "Se preprocesa/valida y suele ser más eficiente", "Solo funciona en Python", "No permite parámetros"], "a": 1, "exp": "Las sentencias se preprocesan, usando variables anfitrionas."}, {"q": "¿Cuáles son los tipos básicos de JOIN en SQL?", "opts": ["LEFT, RIGHT, FULL y DIAGONAL", "INNER, OUTER (LEFT/RIGHT/FULL) y CROSS", "SELF, NATURAL, HASH y LOOP", "TOP, BOTTOM y MIDDLE"], "a": 1, "exp": "JOIN básicos: INNER; OUTER (LEFT/RIGHT/FULL); y CROSS."}, {"q": "En algunos SGBD, ¿cómo simular FULL OUTER JOIN si no está soportado?", "opts": ["LEFT JOIN solamente", "UNION ALL de LEFT JOIN y RIGHT JOIN", "CROSS JOIN con WHERE", "No se puede"], "a": 1, "exp": "Se puede componer con UNION/UNION ALL de un LEFT JOIN y un RIGHT JOIN."}, {"q": "¿Qué afirmación sobre subconsultas con ANY es correcta?", "opts": ["ANY es equivalente a ALL", "ANY es verdadero si la condición se cumple para algún valor devuelto", "ANY exige que se cumpla para todos los valores", "ANY solo funciona con cadenas"], "a": 1, "exp": "ANY evalúa la condición frente a cualquier valor del conjunto."}, {"q": "Respecto a los triggers (disparadores)…", "opts": ["Se invocan manualmente", "Pueden interceptar INSERT/UPDATE/DELETE automáticamente", "Pueden iniciar COMMIT dentro del trigger", "Siempre devuelven valores"], "a": 1, "exp": "Los triggers se ejecutan automáticamente ante eventos DML/DDL."}, {"q": "¿Qué es un índice clusterizado en SQL Server?", "opts": ["Un índice que no guarda datos", "Un índice que define el orden físico de las filas", "Un índice temporal", "Un índice solo para claves externas"], "a": 1, "exp": "Un índice clusterizado determina el orden físico de almacenamiento de las filas en disco."}, {"q": "¿Cuál es la principal ventaja de un índice no clusterizado?", "opts": ["No ocupa espacio", "Permite varios por tabla", "Es más rápido siempre", "No necesita mantenimiento"], "a": 1, "exp": "Una tabla puede tener múltiples índices no clusterizados para acelerar distintas búsquedas."}, {"q": "¿Qué es una vista materializada?", "opts": ["Una vista almacenada físicamente con sus datos", "Una tabla temporal", "Un sinónimo", "Una constraint"], "a": 0, "exp": "Una vista materializada guarda sus datos y se refresca según política definida."}, {"q": "¿Qué diferencia hay entre PRIMARY KEY y UNIQUE?", "opts": ["Ambos permiten nulos", "PRIMARY KEY no permite nulos y UNIQUE sí", "UNIQUE siempre crea índice clusterizado", "PRIMARY KEY se puede repetir"], "a": 1, "exp": "PRIMARY KEY no admite NULL; UNIQUE admite un NULL (según SGBD)."}, {"q": "¿Qué comando elimina una tabla y su estructura permanentemente?", "opts": ["DROP TABLE", "DELETE TABLE", "TRUNCATE TABLE", "REMOVE TABLE"], "a": 0, "exp": "DROP TABLE borra la tabla y su definición."}, {"q": "¿Qué comando elimina solo los datos pero no la estructura?", "opts": ["DROP TABLE", "TRUNCATE TABLE", "DELETE TABLE", "REMOVE"], "a": 1, "exp": "TRUNCATE elimina todas las filas rápidamente y mantiene la estructura."}, {"q": "¿Cuál es la principal diferencia entre DELETE y TRUNCATE?", "opts": ["TRUNCATE borra fila a fila", "DELETE es más rápido siempre", "TRUNCATE reinicia el contador IDENTITY", "DELETE no puede tener WHERE"], "a": 2, "exp": "TRUNCATE elimina todas las filas y reinicia IDENTITY; DELETE puede filtrar con WHERE."}, {"q": "¿Qué nivel de normalización elimina dependencias transitivas?", "opts": ["1FN", "2FN", "3FN", "BCNF"], "a": 2, "exp": "La 3FN elimina dependencias transitivas de atributos no clave."}, {"q": "¿Qué nivel de normalización elimina dependencias parciales de clave?", "opts": ["1FN", "2FN", "3FN", "BCNF"], "a": 1, "exp": "La 2FN elimina dependencias parciales de una clave compuesta."}, {"q": "¿Qué hace la cláusula WITH (CTE) en SQL Server?", "opts": ["Declara un cursor", "Declara una expresión de tabla común", "Crea una constraint", "Genera un trigger"], "a": 1, "exp": "WITH introduce una CTE reutilizable y apta para recursividad."}, {"q": "¿Diferencia entre funciones escalares y de tabla en SQL Server?", "opts": ["Las de tabla no devuelven nada", "Las escalares devuelven un único valor; las de tabla devuelven una tabla", "Son equivalentes", "Las escalares devuelven filas"], "a": 1, "exp": "Las funciones de tabla devuelven un conjunto tabular; las escalares devuelven un valor."}, {"q": "¿Qué comando crea un nuevo rol de base de datos?", "opts": ["CREATE ROLE", "NEW ROLE", "ADD ROLE", "ROLE CREATE"], "a": 0, "exp": "CREATE ROLE define un rol para gestionar permisos."}, {"q": "¿Qué sentencia crea un procedimiento almacenado?", "opts": ["CREATE PROC", "CREATE PROCEDURE", "SP_CREATE", "NEW PROCEDURE"], "a": 1, "exp": "CREATE PROCEDURE (o PROC) define un procedimiento almacenado."}, {"q": "¿Diferencia clave entre procedimientos y funciones en SQL Server?", "opts": ["Los procedimientos devuelven tablas", "Las funciones pueden usarse en SELECT; los procedimientos no", "No hay diferencia", "Las funciones no aceptan parámetros"], "a": 1, "exp": "Las funciones pueden invocarse dentro de SELECT; los procedimientos no."}, {"q": "¿Qué son las funciones de ventana (window functions)?", "opts": ["Operan sobre toda la base", "Operan sobre un conjunto de filas relativo a la fila actual", "Son procedimientos almacenados", "Crean índices"], "a": 1, "exp": "Definidas con OVER(), calculan agregados sin colapsar filas."}, {"q": "¿Cómo ver el plan de ejecución en SQL Server (modo texto/XML)?", "opts": ["EXPLAIN", "SHOWPLAN", "SET SHOWPLAN_XML ON", "EXEC PLAN"], "a": 2, "exp": "Puede activarse con SET SHOWPLAN_XML ON o usando el botón de plan en SSMS."}, {"q": "¿Qué significa escalabilidad vertical?", "opts": ["Añadir más máquinas", "Mejorar hardware de un único servidor", "Replicar bases", "Particionar datos"], "a": 1, "exp": "Escalar verticalmente = aumentar CPU/RAM/almacenamiento de un nodo."}, {"q": "¿Qué es sharding en bases de datos?", "opts": ["Cifrado", "Partición horizontal de datos en varios nodos", "Partición vertical", "Un tipo de índice"], "a": 1, "exp": "Sharding = partir datos por rangos/hashes y distribuirlos entre nodos."}, {"q": "¿Qué garantiza la restricción FOREIGN KEY?", "opts": ["Valores únicos", "Existencia de valores en la tabla referenciada", "Sin duplicados", "No nulos"], "a": 1, "exp": "Asegura integridad referencial entre tablas."}, {"q": "¿Qué hace ON DELETE CASCADE en una FOREIGN KEY?", "opts": ["Impide borrar la fila padre", "Borra el padre pero no los hijos", "Propaga el borrado a las filas hijas relacionadas", "Convierte el borrado en UPDATE"], "a": 2, "exp": "ON DELETE CASCADE elimina automáticamente las filas hijas cuando se borra la fila padre."}];
+
+const quiz = document.getElementById('quiz');
+const totalEl = document.getElementById('total');
+const answeredEl = document.getElementById('answered');
+const scoreEl = document.getElementById('score');
+const correctsEl = document.getElementById('corrects');
+const liveEl = document.getElementById('live');
+const bar = document.getElementById('bar');
+
+let score = 0;
+let answered = 0;
+
+function updateHud() {
+  const total = QUESTIONS.length;
+  totalEl.textContent = total;
+  answeredEl.textContent = answered;
+  scoreEl.textContent = score;
+  correctsEl.textContent = score;
+  const pct = total ? Math.round((score/total)*100) : 0;
+  liveEl.textContent = pct;
+  bar.style.width = Math.min(100, (answered/total)*100) + '%';
+}
+
+function makeQuestionCard(qobj, index) {
+  const wrapper = document.createElement('article');
+  wrapper.className = 'card';
+
+  const q = document.createElement('div');
+  q.className = 'q';
+  q.innerHTML = (index+1) + '. ' + qobj.q;
+  wrapper.appendChild(q);
+
+  const opts = document.createElement('div');
+  opts.className = 'opts';
+
+  qobj.opts.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = text;
+    btn.addEventListener('click', () => handleAnswer(btn, i, qobj));
+    opts.appendChild(btn);
+  });
+
+  const fb = document.createElement('div');
+  fb.className = 'explain';
+
+  wrapper.appendChild(opts);
+  wrapper.appendChild(fb);
+
+  return wrapper;
+}
+
+function handleAnswer(button, selectedIdx, qobj) {
+  if (button.parentElement.dataset.locked === '1') return;
+
+  const buttons = Array.from(button.parentElement.querySelectorAll('.opt'));
+  buttons.forEach(b => b.disabled = true);
+
+  const correct = qobj.a;
+  if (selectedIdx === correct) {
+    button.classList.add('correct');
+    score++;
+    setFeedback(button, "✔️ ¡Correcto! " + (qobj.exp || ""));
+  } else {
+    button.classList.add('wrong');
+    buttons[correct].classList.add('correct');
+    setFeedback(button, "❌ No es correcto. Respuesta correcta: <strong>" + buttons[correct].textContent + "</strong>. " + (qobj.exp || ""));
+  }
+
+  answered++;
+  button.parentElement.dataset.locked = '1';
+  updateHud();
+}
+
+function setFeedback(button, html) {
+  const fb = button.parentElement.parentElement.querySelector('.explain');
+  fb.innerHTML = html;
+}
+
+function resetAll() {
+  score = 0;
+  answered = 0;
+  quiz.innerHTML = '';
+  QUESTIONS.forEach((q, i) => quiz.appendChild(makeQuestionCard(q, i)));
+  updateHud();
+}
+
+document.getElementById('btnReset').addEventListener('click', resetAll);
+resetAll();
+</script>
+</body>
+</html>
